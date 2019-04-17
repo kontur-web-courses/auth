@@ -1,0 +1,58 @@
+﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.DataProtection
+@using Microsoft.AspNetCore.Html
+@using Microsoft.AspNetCore.Identity
+
+@inject IDataProtectionProvider dataProtectionProvider
+
+@{
+    var cookies = Context.Request.Cookies;
+    var authCookieName = "PhotoApp.Auth";
+    var user = Context.User;
+
+    // NOTE: Пока синтаксис кривоват, но в ASP.NET Core 3 вернут классный: https://github.com/aspnet/AspNetCore/issues/5110
+    Func<ClaimsIdentity, IHtmlContent> renderIdentityInfo =
+        @<div>
+            <div><b>Is authenticated:</b> @item.IsAuthenticated</div>
+            <div><b>Authentication type:</b> @item.AuthenticationType</div>
+            <div><b>Identity name:</b> @item.Name</div>
+            <div><b>Role claim type:</b> @item.RoleClaimType</div>
+            <div><b>Claims count:</b> @item.Claims.Count()</div>
+            @foreach (var claim in item.Claims)
+            {
+                <div style="margin-left: 30px">Claim type: <b>@claim.Type</b></div>
+                <div style="margin-left: 30px; margin-bottom: 10px;">Claim value: @claim.Value</div>
+            }
+        </div>;
+}
+
+<h2>From Cookies</h2>
+@if (cookies.TryGetValue(authCookieName, out var ticketString))
+{
+    var protector = dataProtectionProvider.CreateProtector(
+        "Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationMiddleware",
+        IdentityConstants.ApplicationScheme,
+        "v2");
+    var ticketDataFormat = (ISecureDataFormat<AuthenticationTicket>)new TicketDataFormat(protector);
+    var ticket = ticketDataFormat.Unprotect(ticketString, null);
+
+    <h4>Properties</h4>
+    foreach (var item in ticket.Properties.Items)
+    {
+        <div><b>@item.Key</b>: @item.Value</div>
+    }
+    <div><br /></div>
+
+    <h4>Identity</h4>
+    @renderIdentityInfo(ticket.Principal.Identity as ClaimsIdentity)
+    <div><br /></div>
+}
+else
+{
+    <div>Can't find "@(authCookieName)" cookie</div>
+}
+
+<h2>From User</h2>
+<h4>Identity</h4>
+@renderIdentityInfo(user.Identity as ClaimsIdentity)

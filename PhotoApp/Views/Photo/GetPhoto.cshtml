@@ -1,0 +1,15 @@
+﻿@model GetPhotoModel
+
+<div class="container">
+    <div>
+        <img class="photo" src="@("/photos/" + Model.Photo.FileName)"/>
+    </div>
+    <div>
+        <div class="h5">@Model.Photo.Title</div>
+        <div class="bottomMargin">
+            <a asp-controller="Photo" asp-action="EditPhoto" asp-route-id="@Model.Photo.Id">Изменить подпись</a>
+            <text>&nbsp;</text>
+            <a asp-controller="Photo" asp-action="DeletePhoto" asp-route-id="@Model.Photo.Id">Удалить фото</a>
+        </div>
+    </div>
+</div>
