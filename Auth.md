@@ -7,7 +7,7 @@
 Приложение использует https, поэтому для корректной работы понадобится сертификат.
 .NET Core умеет создавать сертификаты для localhost. Только надо установить такой сертификат в доверенные.
 Для этого запусти команду:
-```
+```bash
 dotnet dev-certs https --trust
 ```
 
@@ -24,18 +24,18 @@ dotnet dev-certs https --trust
 
 
 Прежде всего потребуется установить новый инструмент для .NET Core CLI — генератор кода:
-```
+```bash
 dotnet tool install -g dotnet-aspnet-codegenerator
 ```
 
 Кроме того, в проект надо добавить NuGet-пакет для кодогенерации.
 Выполни в папке с проектом:
-```
+```bash
 dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design
 ```
 
 Наконец, можно выполнить команду генерации кода Identity:
-```
+```bash
 dotnet aspnet-codegenerator identity -dc UsersDbContext -u PhotoAppUser -sqlite
 ```
 Дополнительные параметры команды указывают:
@@ -76,15 +76,23 @@ dotnet aspnet-codegenerator identity -dc UsersDbContext -u PhotoAppUser -sqlite
 
 
 В коде появился новый контекст. Чтобы обновить БД для хранения данных из него, надо создать миграцию:
-```
+```bash
 dotnet ef migrations add Users --context UsersDbContext
 ```
 Миграция — это план обновления. Его можно применять к БД, которыми будет пользоваться приложение.
 
+Чтобы миграция успешно создалась:
+1. Приложение должно компилироваться без ошибок
+2. При старте приложения не должно быть ошибок,
+   т.е. код конфигурирования (в `Startup.cs` и `IdentityHostingStartup.cs`) должен работать корректно
+3. Приложение не должно быть запущенным
+Все это нужно, чтобы команда миграции смогла построить и запустить проект,
+а затем получить через рефлексию всю необходимую информацию о контексте.
+
 
 После создания миграции ее надо запустить на имеющейся базе данных Sqlite.
 Сделай это с помощью следующей команды:
-```
+```bash
 dotnet ef database update --context UsersDbContext
 ```
 Теперь база данных обновлена и в ней можно хранить информацию о пользователях.
@@ -110,7 +118,8 @@ dbContext.Database.Migrate()
 
 
 Чтобы под пользователем можно было зайти, подключи middleware аутентификации в `Startup.cs`.
-Его вызов обязательно должен быть после подключением middleware для отдачи статических файлов.
+Его вызов обязательно должен быть после подключением middleware для отдачи статических файлов (`UseStaticFiles`),
+но перед подключением middleware для MVC (`UseMvc`).
 Нужный вызов:
 ```cs
 app.UseAuthentication();
@@ -121,7 +130,7 @@ app.UseAuthentication();
 
 
 Но даже если зайти под нужным пользователем, его фотки не будут показываться, пока не поправить `PhotoController`.
-Пусть метод `GetOwnerId` берет идентификатор из залогиненного пользователя:
+Измени метод `GetOwnerId` так, чтобы он возвращал идентификатор залогиненного пользователя:
 ```cs
 private string GetOwnerId()
 {
@@ -154,7 +163,7 @@ private string GetOwnerId()
 Если пометить атрибутом `[Authorize]` контроллер, но надо разрешить некоторый метод, то метод помечается
 атрибутом `[AllowAnonymous]`.
 
-Защити действия над фотографиями из `PhotoController`.
+Защити все действия над фотографиями из `PhotoController`, кроме `Index`.
 
 
 ### Задача 3.1. Пароли
@@ -174,9 +183,11 @@ https://docs.microsoft.com/ru-ru/aspnet/core/security/authentication/identity-co
 
 Чтобы облегчить себе жизнь во время прохождения блока:
 1. Скопируй явную конфигурацию из документации в `IdentityHostingStartup.cs`
-2. Выстави настройки `RequireDigit`, `RequireLowercase`, `RequireNonAlphanumeric`, `RequireUppercase` в `false`
-3. Заодно выстави `RequireConfirmedEmail` в `false`, чтобы при регистрации новых пользователей
-   не требовалось подтверждать email. В реальных проектах так делать не надо, это только для разработки и обучения :)
+2. Выстави настройки для паролей `RequireDigit`, `RequireNonAlphanumeric`,
+   и `RequireUppercase` в `false`. Оставь `RequireLowercase` в `true`!
+3. Заодно выстави в настройках входа `RequireConfirmedEmail` в `false`,
+   чтобы при регистрации новых пользователей не требовалось подтверждать email.
+   В реальных проектах так делать не надо, это только для разработки и обучения :)
 
 При желании можешь поменять пароли для `vicky`, `cristina` и `dev` в файле `DataExtensions.cs`, чтобы было проще.
 Зарегистрируй нового пользователя с просстым паролем из 6 символов: у тебя должно получиться.
@@ -184,12 +195,24 @@ https://docs.microsoft.com/ru-ru/aspnet/core/security/authentication/identity-co
 
 
 Все ошибки, которые ты видел, были на английском языке. Это не очень удобно для русскоговорящих пользователей.
-Их тексты на английском прописаны в файлах `Identity/Pages`.
 
-Кроме того, для локализации нужно поменять реализацию `IdentityErrorDescriber`.
+В большинстве случаев тексты ошибок на английском прописаны в файлах `Identity/Pages`.
+Например, в файле `Register.cshtml.cs` в классе `InputModel` с помощью атрибутов.
+У любого атрибута для валидации есть свойство `ErrorMessage`, в котором можно прописать текст сообщения об ошибке
+на русском языке. Таким образом эти тексты ошибок легко локализуются.
+Задай текст сообщения для атрибута `Required` в свойстве `Email` класса `InputModel`.
+
+Но кроме атрибутов для локализации нужно поменять реализацию `IdentityErrorDescriber`.
 Уже есть готовая реализация, позаимствованная со StackOverflow: `Services/RussianIdentityErrorDescriber.cs`.
 В файле `IdentityHostingStartup.cs` в конфигурировании Identity (найди `services.AddDefaultIdentity<PhotoAppUser>()`)
 добавь строчку `.AddErrorDescriber<RussianIdentityErrorDescriber>()`.
+
+Теперь попробуй зарегистрировать нового пользователя:
+- Сначала заполни email, а затем сделай пустым. Ты должен увидеть сообщение об ошибке из атрибута `Required`.
+  Благодаря `jquery.validate` сообщение появляется до отправки формы.
+- Теперь введи корректный email, но в качестве пароля используй 6 цифр, например, 123456.
+  Отправь форму. Если все правильно, то в ответ получишь сообщение
+  из `RussianIdentityErrorDescriber`: «Пароль должен содержать хотя бы один символ в нижнем регистре»
 
 Как локализовать весь остальной пользовательский интерфейс ясно: надо локализовывать файлы из папки `Identity/Pages`.
 Сейчас, по понятным причинам, этого делать не нужно.
@@ -316,8 +339,9 @@ services.ConfigureApplicationCookie(options =>
 
 ### Задача 4.2. Политики
 
-Более гибко настраивать права пользователей позволяют политики на основании различных claims (требований) пользователя.
+Более гибко настраивать права пользователей позволяют политики на основании различных claims (утверждениях) пользователя.
 
+Сейчас любому пользователю при заходе на страницу отдельной фотографии доступно изменение подписи к фотографии.
 Сделай так, чтобы возможность редактировать подписи к фотографиям была доступна только beta-тестерам.
 
 Для начала в `IdentityHostingStartup.cs` нужно зарегистрировать некоторую политику:
@@ -350,7 +374,7 @@ Claim, добавленные таким образом хранятся в от
 
 Будет хорошо, если пользовали, которым недоступно редактирование подписей вообще не видели ссылки на это действие.
 Проверить во view выполнение политики для пользователя можно так:
-```cs
+```cshtml
 (await AuthorizationService.AuthorizeAsync(User, "PolicyName")).Succeeded
 ```
 Только надо добавить в начале view подключение зависимостей:
@@ -358,14 +382,187 @@ Claim, добавленные таким образом хранятся в от
 @using Microsoft.AspNetCore.Authorization
 @inject IAuthorizationService AuthorizationService
 ```
+Скрой действие «Изменить подпись» на странице отдельной фотографии.
+
 
 Когда закончишь с этим добавь еще одну политику: пусть только платым пользователям будет доступна загрузка фотографий.
 Назови политику `CanAddPhoto`, в качестве типа claim использй `subscription`, в качестве значения `paid`.
-Аналогично защити методы контроллера для загрузки фотографий и скрой ссылку на загрузку фото в меню приложения.
-А вот claim в пользователя надо выставить иначе. Путь он не хранится отдельно в таблице, а вычисляется по свойствам `PhotoDBUser`.
+Аналогично предыдущей политике, защити методы контроллера для загрузки фотографий.
+и скрой ссылку «Добавить фото» в меню приложения.
 
-...
+А вот claim в пользователя надо выставить иначе. Путь он не хранится отдельно в таблице, а вычисляется по свойствам из `PhotoAppUser`.
+
+Для этого:
+1. Добавь в класс `PhotoAppUser` булево поле `Paid`.
+2. Создай миграцию, т.к. надо добавить новую колонку в таблицу пользователей:
+   `dotnet ef migrations add Paid --context UsersDbContext`
+2. Разбери generic-параметр `TUser` в методе `SeedWithSampleUsersAsync`, заменив его использования
+   на тип `PhotoAppUser`.
+3. Сделай так, чтобы пользователю `cristina` при создании в поле `Paid` выставлялось значение `true`. 
+4. Самое важное! Допиши `CustomClaimsPrincipalFactory` в `Services/Authorization/CustomClaimsPrincipalFactory.cs`.
+   Сначала замени `IdentityUser` на `PhotoAppUser`, а затем сделай так, чтобы пользователю с `Paid == true`
+   выставлялся claim `subscription` со значением `paid`.
+5. Зарегистрируй фабрику в `IdentityHostingStartup.cs`:
+   `services.AddScoped<IUserClaimsPrincipalFactory<PhotoAppUser>, CustomClaimsPrincipalFactory>()`
+
+Убедись, что пользователю `cristina` доступно добавление фото, `vicky` не доступно.
+
+Как видишь, определив собственную `UserClaimsPrincipalFactory`,
+можно выставлять claims для пользователя по произвольным правилам.
+
 
 ### Задача 4.3. Обработчик для требования
+
+В приложении до сих пор любой аутентифицировавшийся пользователь может открыть любую фотографию,
+если у него будет прямая ссылка до нее.
+
+Убедись в этом:
+1. Зайди под пользователем `vicky`
+2. Перейди на страницу с одной фотографией и сохрани URL страницы
+3. Выполни logout и зайди под пользователем `cristina`
+4. Используя сохраненный URL, чтобы открыть фотографию. Она доступна другому пользователю!
+
+Чтобы создать политику, которая бы запрещала доступ к фото другим пользователям,
+потребуется `AuthorizationHandler`.
+
+
+Для начала создай новую политику `MustOwnPhoto`, а в ней потребуй два условия:
+```cs
+policyBuilder.RequireAuthenticatedUser();
+policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
+```
+
+`MustOwnPhotoRequirement` — некоторое требование, которое будет проверяться динамически с помощью обработчика.
+Обработчиком требования является `MustOwnPhotoHandler`, потому что он наследуется
+от класса `AuthorizationHandler<MustOwnPhotoRequirement>`.
+
+Но, чтобы обработчик создавался его надо зарегистрировать в качестве `IAuthorizationHandler`:
+```cs
+services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
+```
+
+Защити действия `GetPhoto`, `EditPhoto`, `DeletePhoto` в `PhotoController` с помощью новой политики.
+Заметь, что это нормально использовать несколько атрибутов `Authorize` у метода.
+В этом случае для выполнения действия должны быть выполнены требования каждого атрибута.
+
+Допиши `MustOwnPhotoHandler` так, чтобы требование выполнялось,
+если текущий пользователь является владельцем фотографии.
+
+
 ### Задача 5. Аутентификация через Google
+
+ASP.NET Core включает встроенную поддержку для OAuth, за счет чего к нему
+легко подключить внешних провайдеров аутентификации.
+А для некоторых, включай Google и Facebook есть даже готовые методы,
+позволяющие подключить провайдера, написав пару строчек.
+
+Правда в связи с закрытием Google+ строчек в версии 2.2 немного больше...
+
+Добавь следующий код в `IdentityHostingStartup.cs`:
+```cs
+services.AddAuthentication()
+    .AddGoogle("Google", options =>
+    {
+        options.SignInScheme = IdentityConstants.ExternalScheme;
+
+        options.ClientId = context.Configuration["Authentication:Google:ClientId"];
+        options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
+
+        options.UserInformationEndpoint = "https://www.googleapis.com/oauth2/v2/userinfo";
+
+        options.ClaimActions.Clear();
+        options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
+        options.ClaimActions.MapJsonKey(ClaimTypes.Name, "name");
+        options.ClaimActions.MapJsonKey(ClaimTypes.GivenName, "given_name");
+        options.ClaimActions.MapJsonKey(ClaimTypes.Surname, "family_name");
+        options.ClaimActions.MapJsonKey("urn:google:profile", "link");
+        options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
+    });
+```
+Это почти все, что нужно, чтобы заработала аутентификация через Google в случае Identity,
+потому что отображение нужных кнопок для внешних провайдеров аутентификации уже реализовано.
+
+
+Осталось только зарегистрировать приложение в Google, получить Client ID и Client Secret,
+а затем положить их в настройки, чтобы следующие строчки работали корректно:
+```cs
+options.ClientId = configuration["Authentication:Google:ClientId"];
+options.ClientSecret = configuration["Authentication:Google:ClientSecret"];
+```
+
+Для этого:
+1. Перейди на страницу https://developers.google.com/identity/sign-in/web/sign-in#before_you_begin
+2. Нажми кнопку «Configure Project»
+3. Введи имя нового проекта
+4. Выбери опцию Web server и введи https://localhost:5001/signin-google в качестве «Authorized redirect URIs»
+5. Нажми на кнопку «Create», а затем получи Client ID и Client Secret.
+
+
+https://localhost:5001/signin-google — это путь, по которому Google отправит данные пользователя
+после успешной аутентификации. Такой адрес используется по умолчанию в ASP.NET Core, соответственно,
+данные от Google будут успешно получены и обработаны Authentication Middleware.
+
+
+Client ID и Client Secret используются авторизации приложения в Google.
+Их можно сохранить в `appsettings.json`, по путям `Authentication:Google:ClientId`
+и `Authentication:Google:ClientSecret` и все будет работать.
+Но файлы, хранящиеся в репозитории, в том числе `appsettings.json` — это плохое место для хранения паролей и секретов.
+
+Поэтому лучше воспользоваться специальным хранилищем для секретов вот так:
+```bash
+dotnet user-secrets set "Authentication:Google:ClientId" "<client id>"
+dotnet user-secrets set "Authentication:Google:ClientSecret" "<client secret>"
+```
+
+В этом случае значения будут сохранены в папке тут:
+- `%APPDATA%\Microsoft\UserSecrets\<user_secrets_id>\secrets.json` в Windows
+- `~/.microsoft/usersecrets/<user_secrets_id>/secrets.json` в Linux, Mac
+
+В Visual Studio секретами можно управлять, если кликнуть правой кнопкой мыши по проекту в «Solution Explorer»
+и выбрать пункт «Manage Secrets».
+
+
+Далее своими проектами в Google можно будет управлять через специальный «пульт»:
+https://console.developers.google.com/apis/credentials
+
+
+После верного задания Client ID и Client Secret аутентификация через Google
+должна появиться на странице логина и корректно работать.
+
+
 ### Задача 6. Письма
+
+Хорошая практика — предлагать пользователю подтвердить адрес своей электронной почты,
+чтобы случайная опечатка при вводе email или забытый пароль не приводили к потере доступа к аккаунту.
+
+Identity пытается отправлять письма с кодом подтверждения всем новым пользователям с помощью `IEmailSender`.
+По умолчанию он реализован так, что ничего не отправляет.
+
+
+В `Services/SimpleEmailSender` есть реализация, которая умеет отправлять письма через внешний SMTP-сервер.
+Подключи ее:
+```cs
+services.AddTransient<IEmailSender, SimpleEmailSender>(serviceProvider =>
+    new SimpleEmailSender(
+        serviceProvider.GetRequiredService<ILogger<SimpleEmailSender>>(),
+        serviceProvider.GetRequiredService<IHostingEnvironment>(),
+        context.Configuration["SimpleEmailSender:Host"],
+        context.Configuration.GetValue<int>("SimpleEmailSender:Port"),
+        context.Configuration.GetValue<bool>("SimpleEmailSender:EnableSSL"),
+        context.Configuration["SimpleEmailSender:UserName"],
+        context.Configuration["SimpleEmailSender:Password"]
+    ));
+```
+Большинство настроек для подключения к SMTP-серверу Google уже прописаны в `appsettings.json`.
+Пропиши в файл или в User Secrets адрес своей электронной почты Google в `UserName`
+и соответствуйщий пароль в `Password`.
+
+Также, чтобы «стороннее приложение», которое ты пишешь, смогло отправлять письма придется
+понизить уровень безопасности аккаунта на странице https://myaccount.google.com/lesssecureapps
+
+Зарегистрируй нового пользователя с существующим email и убедись, что на него пришло письмо
+для подтверждения адреса электронной почты.
+
+
+Если нужно, чтобы без подтверждения email нельзя было войти в аккаунт,
+следует изменить настройку `RequireConfirmedEmail`.

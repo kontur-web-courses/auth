@@ -10,9 +10,9 @@ namespace PhotoApp.Services
 {
     // NOTE: чтобы использовать аккаунт с gmail.com для отправки писем
     // необходимо разрешить "Небезопасные приложения" https://myaccount.google.com/lesssecureapps
-    public class EmailSender : IEmailSender
+    public class SimpleEmailSender : IEmailSender
     {
-        private readonly ILogger<EmailSender> logger;
+        private readonly ILogger<SimpleEmailSender> logger;
         private readonly IHostingEnvironment hostingEnvironment;
         private readonly string host;
         private readonly int port;
@@ -20,7 +20,7 @@ namespace PhotoApp.Services
         private readonly string userName;
         private readonly string password;
 
-        public EmailSender(ILogger<EmailSender> logger,
+        public SimpleEmailSender(ILogger<SimpleEmailSender> logger,
             IHostingEnvironment hostingEnvironment,
             string host, int port, bool enableSSL,
             string userName, string password)

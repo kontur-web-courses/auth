@@ -27,21 +27,18 @@ namespace PhotoApp.Services.Authorization
             }
 
             var photoIdString = filterContext.RouteData.Values["id"].ToString();
-
-            if (!Guid.TryParse(photoIdString, out Guid photoId))
-            {
-                context.Fail();
-                return;
-            }
-
             var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!await photoRepository.IsPhotoOwnerAsync(photoId, userId))
-            {
-                context.Fail();
-                return;
-            }
 
-            context.Succeed(requirement);
+            // NOTE: Использовать, если нужное условие выполняется
+            // context.Succeed(requirement);
+
+            // NOTE: Использовать, если нужное условие не выполняется
+            // context.Fail();
+
+            // NOTE: Этот метод проверяет является ли пользователь владельцем фотографии
+            // await photoRepository.IsPhotoOwnerAsync(...)
+
+            throw new NotImplementedException();
         }
     }
 }

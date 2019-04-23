@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Identity;
+using NUnit.Framework;
 
 namespace PhotoApp.Services
 {
@@ -63,6 +65,59 @@ namespace PhotoApp.Services
             for (var i = 0; i < a.Length; i++)
                 areSame &= (a[i] == b[i]);
             return areSame;
+        }
+    }
+
+    [TestFixture]
+    public class SimplePasswordHasherSpecification
+    {
+        private SimplePasswordHasher<IdentityUser> hasher;
+        private readonly IdentityUser emptyUser = new IdentityUser();
+        private readonly string correctPassword = "correct";
+        private readonly string incorrectPassword = "incorrect";
+
+        [SetUp]
+        public void SetUp()
+        {
+            hasher = new SimplePasswordHasher<IdentityUser>();
+        }
+
+        [Test]
+        public void HashPassword_ShouldGenerateHash()
+        {
+            Assert.IsNotEmpty(hasher.HashPassword(emptyUser, correctPassword));
+        }
+
+        [Test]
+        public void HashPassword_ShouldGenerateDifferentHashes()
+        {
+            var hash1 = hasher.HashPassword(emptyUser, correctPassword);
+            var hash2 = hasher.HashPassword(emptyUser, incorrectPassword);
+            Assert.IsFalse(hash1.SequenceEqual(hash2));
+        }
+
+        [Test]
+        public void HashPassword_ShouldGenerateHashesWithSalt()
+        {
+            var hash1 = hasher.HashPassword(emptyUser, correctPassword);
+            var hash2 = hasher.HashPassword(emptyUser, correctPassword);
+            Assert.IsFalse(hash1.SequenceEqual(hash2));
+        }
+
+        [Test]
+        public void VerifyHashedPassword_ShouldReturnSuccess_WhenCorrectPassword()
+        {
+            var hash = hasher.HashPassword(emptyUser, correctPassword);
+            var verificationResult = hasher.VerifyHashedPassword(emptyUser, hash, correctPassword);
+            Assert.AreEqual(PasswordVerificationResult.Success, verificationResult);
+        }
+
+        [Test]
+        public void VerifyHashedPassword_ShouldReturnFailed_WhenIncorrectPassword()
+        {
+            var hash = hasher.HashPassword(emptyUser, correctPassword);
+            var verificationResult = hasher.VerifyHashedPassword(emptyUser, hash, incorrectPassword);
+            Assert.AreEqual(PasswordVerificationResult.Failed, verificationResult);
         }
     }
 }
