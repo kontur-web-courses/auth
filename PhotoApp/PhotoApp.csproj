@@ -4,7 +4,7 @@
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <UserSecretsId>af89c704-6e9c-456e-ad26-34aa3e177319</UserSecretsId>
-    <StartupObject>PhotoApp.Program</StartupObject>
+    <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
 
 
