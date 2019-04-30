@@ -612,7 +612,7 @@ services.AddTransient<IEmailSender, SimpleEmailSender>(serviceProvider =>
 
 Добавь следующий код в `IdentityHostingStartup.cs`:
 ```cs
-services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+services.AddAuthentication()
     .AddJwtBearer(options =>
     {
         options.RequireHttpsMetadata = false;
@@ -621,7 +621,7 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 ```
-После этого JWT-токены как-то начнут поддерживаться. Но надо донастроить.
+После этого аутентификация по JWT-токены в какой-то степени начнет поддерживаться. Но надо донастроить.
 
 В `TokenValidationParameters`:
 1. Выстави `ValidateIssuer` и `ValidateAudience` в `false`,
@@ -654,8 +654,86 @@ options.Events = new JwtBearerEvents
 Только не забудь передать правильное имя cookie.
 
 
-Пришло время убедиться, что все работает:
+Аутентификация по JWT-токенам теперь должна работать.
+Проверь, что токен правильно генерируется и преобразуется в `User`:
 1. Перейди по секретному адресу `/hack/super_secret_qwe123` и получи токен.
-2. Перейди на главную страницу и убедись, что доступка ссылка «Decode»,
-   как всем разработчикам.
-3. Перейди по ней и убедись, что User заполнен значениями из JWT-токена.
+2. Перейди на секретную страницу декодирования пользователя без защиты авторизацией
+   `/hack/decode` и убедись, что пользователь заполнен.
+
+
+Пора настроить авторизацию. Сейчас она настроена использовать только Identity.
+Надо сделать так, чтобы авторизация поддерживала оба способа аутентификации: Identity и JwtBearer.
+
+Сначала немного теории. У каждого способа аутентификации есть идентификатор — схема.
+Для Identity значение схемы по умолчанию хранится в константе `IdentityConstants.ApplicationScheme`.
+Для JwtBearer значение схемы по умолчанию хранится в константе `JwtBearerDefaults.AuthenticationScheme`.
+Если надо добавить поддержку нескольких видов JwtBearer, то можно задать схему явно:
+```cs
+services.AddAuthentication()
+    .AddJwtBearer("SomeJWT", options => { /* */ })
+    .AddJwtBearer("AnotherJWT", options => { /* */ });
+```
+
+Identity тоже добавляет свой способ аутентификации при вызове `services.AddDefaultIdentity<PhotoAppUser>()`.
+В `AddDefaultIdentity` скрыт следующий код:
+```cs
+services.AddAuthentication(o =>
+{
+    o.DefaultScheme = IdentityConstants.ApplicationScheme;
+    o.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+}).AddIdentityCookies();
+```
+`AddIdentityCookies` — это добавляемый способ аутентификации.
+А настройка `DefaultScheme` — это та схема, которая будет использоваться по умолчанию для различных операций.
+В том числе атрибутом `[Authorize]`. И `AddDefaultIdentity` выставляет Identity для использования по умолчанию.
+
+
+Identity в качестве схемы по умолчанию — это нормально, пусть так и будет.
+А надо сделать так, чтобы `[Authorize]` стал поддерживать новый способ аутентификации.
+Для этого надо переопределить политику авторизации по умолчанию вот так:
+```cs
+services.AddAuthorization(authorizationOptions =>
+{
+    authorizationOptions.DefaultPolicy = new AuthorizationPolicyBuilder(
+        JwtBearerDefaults.AuthenticationScheme,
+        IdentityConstants.ApplicationScheme)
+        .RequireAuthenticatedUser()
+        .Build();
+        /* добавленный ранее код конфигурации */
+}
+```
+Новая политика использует и Identity, и JwtBearer.
+
+
+Пришло время для проверки:
+1. Перейди по секретному адресу `/hack/super_secret_qwe123` и получи токен.
+2. Перейди на главную страницу и убедись, что доступна ссылка «Decode»,
+   как и всем разработчикам.
+3. Перейди по ней и убедись, что сам метод пока еще не доступен.
+
+
+Настройка политики по умолчанию никак не влияет на атрибуты с дополнительными настройками,
+в том числе на `[Authorize(Roles = "Dev")]`, поэтому страница по ссылка «Decode» еще не работает.
+
+Быстрый способ починить — дополнительно к роли перечислить в атрибуте допустимые схемы через запятую:
+```cs
+[Authorize(Roles = "Dev", AuthenticationSchemes = "Identity.Application,Bearer")]
+```
+
+Качественный способ решить эту проблему — везде для конфигурирования авторизации использовать политики,
+как ранее использовали `[Authorize(Policy = "Beta")]`. Глядя на политику по умолчанию и другие политики,
+добавь политику `"Dev"` и используй ее в `DevController`. После этого ссылка «Decode» должна заработать.
+Причем как для аутентификации по токену, так и для пользователя `dev@gmail.com`.
+
+Замечание. Порядок добавления схем в политику имеет значение.
+Чтобы получить нужный результат добавь сначала `JwtBearerDefaults.AuthenticationScheme`,
+а затем `IdentityConstants.ApplicationScheme`.
+
+
+Итоговая проверка:
+1. Перейди по секретному адресу `/hack/super_secret_qwe123` и получи токен.
+2. Залогинься под пользователем `vicky@gmail.com`.
+3. Перейди на главную страницу и убедись, что отображаются фотографии пользователя `vicky@gmail.com`.
+4. Убедись, что доступна ссылка «Decode», как и всем разработчикам.
+5. Перейди по ссылке «Decode» и убедись, что пользователь (ClaimsPrincipal) представлен
+   двумя личностями (ClaimsIdentity), одна из которых заполнена из токена, а другая — `vicky@gmail.com`.
