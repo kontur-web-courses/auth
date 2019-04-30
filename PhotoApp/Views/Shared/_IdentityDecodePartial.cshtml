@@ -54,5 +54,8 @@ else
 }
 
 <h2>From User</h2>
-<h4>Identity</h4>
-@renderIdentityInfo(user.Identity as ClaimsIdentity)
+@foreach (var claimsIdentity in user.Identities)
+{
+    <h4>Identity</h4>
+    @renderIdentityInfo(claimsIdentity)
+}

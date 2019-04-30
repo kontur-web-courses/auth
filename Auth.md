@@ -89,6 +89,9 @@ dotnet ef migrations add Users --context UsersDbContext
 Все это нужно, чтобы команда миграции смогла построить и запустить проект,
 а затем получить через рефлексию всю необходимую информацию о контексте.
 
+Если при запуске миграции встретилась такая замысловатая ошибка про «design time», проверь предыдущие три пункта.
+`Unable to create an object of type 'UsersDbContext'. For the different patterns supported at design time, see https://go.microsoft.com/fwlink/?linkid=851728`
+
 
 После создания миграции ее надо запустить на имеющейся базе данных Sqlite.
 Сделай это с помощью следующей команды:
@@ -190,7 +193,7 @@ https://docs.microsoft.com/ru-ru/aspnet/core/security/authentication/identity-co
    В реальных проектах так делать не надо, это только для разработки и обучения :)
 
 При желании можешь поменять пароли для `vicky`, `cristina` и `dev` в файле `DataExtensions.cs`, чтобы было проще.
-Зарегистрируй нового пользователя с просстым паролем из 6 символов: у тебя должно получиться.
+Зарегистрируй нового пользователя с простым паролем из 6 символов: у тебя должно получиться.
 Затем выйди из него и зайди снова. Вход должен получиться, несмотря на то, что ты не подтверждал email.
 
 
@@ -294,17 +297,18 @@ services.ConfigureApplicationCookie(options =>
 {
     var serviceProvider = services.BuildServiceProvider();
     options.SessionStore = serviceProvider.GetRequiredService<EntityTicketStore>();
-    ...
+    /* добавленный ранее код конфигурации */
 });
 ```
 
 Так как это хранилище использует Entity Framework, надо его сконфигурировать,
 а затем выполнить миграцию и обновление базы данных:
-1. Сконфигурируй `TicketsDbContext` в `IdentityHostingStartup.cs` аналогично `UsersDbContext`,
-   добавь значение для `TicketsDbContextConnection` в `appsettings.json`
-2. `dotnet ef migrations add Tickets --context TicketsDbContext`
-3. `dotnet ef database update --context TicketsDbContext`,
-  либо добавить `dbContext.Database.Migrate()` в `Data/DataExtensions.cs`
+1. Сконфигурируй `TicketsDbContext` в `IdentityHostingStartup.cs` аналогично `UsersDbContext`
+2. Добавь значение для `TicketsDbContextConnection` в `appsettings.json`,
+   причем можешь снова использовать `PhotoApp.db` в качестве файла БД
+3. `dotnet ef migrations add Tickets --context TicketsDbContext`
+4. `dotnet ef database update --context TicketsDbContext`,
+   либо добавить `dbContext.Database.Migrate()` в `Data/DataExtensions.cs`
 
 После подключения снова залогинься и перейди на страницу Decode.
 Обрати внимание, что теперь в аутентификационной куке хранится только идентификатор сессии.
@@ -318,14 +322,15 @@ services.ConfigureApplicationCookie(options =>
 
 
 Один из способов — ввести систему ролей.
-Добавь новую роль `Dev`, присвой ее пользователю `dev@gmail.com` и сделай так,
+Добавь новую роль `Dev`, присвой ее уже имеющемуся пользователю `dev@gmail.com` и сделай так,
 чтобы только пользователи с ролью `Dev` имели доступ к `DevController`.
 
 Подсказки:
 - В конфигурировании Identity в `IdentityHostingStartup.cs` надо добавить `.AddRoles<IdentityRole>()`
   сразу после `.AddDefaultIdentity<PhotoAppUser>()`
-- Роль нужно предварительно создать в БД. Сделай так, чтобы метод `SeedWithSampleRolesAsync`
-  из `DataExtensions.cs` выполнялся при старте приложения, причем до `SeedWithSampleUsersAsync`
+- Нужно предварительно создать Роль в БД. Код создания роли уже есть в методе `SeedWithSampleRolesAsync`.
+  Сделай так, чтобы метод `SeedWithSampleRolesAsync` из `DataExtensions.cs` выполнялся при старте приложения,
+  причем до `SeedWithSampleUsersAsync`. Тебе понадобится `RoleManager<IdentityRole>`: достань его из `ServiceProvider`.
 - Добавить пользователю новую роль можно командой `await userManager.AddToRoleAsync(user, "RoleName")`
 - Защитить метод или контроллер можно с помощью атрибута с параметром: `[Authorize(Roles = "RoleName")]`
 
@@ -358,7 +363,7 @@ services.AddAuthorization(authorizationOptions =>
 });
 ```
 
-Эта политика требует, чтобы у пользователь был аутентифицирован и у него был claim `testing` со значением `beta`.
+Эта политика требует, чтобы пользователь был аутентифицирован и у него был claim `testing` со значением `beta`.
 Сейчас таких пользователей нет.
 
 Сделай так, чтобы при старте приложения пользователю `vicky` добавлялся такой claim.
@@ -393,22 +398,23 @@ Claim, добавленные таким образом хранятся в от
 А вот claim в пользователя надо выставить иначе. Путь он не хранится отдельно в таблице, а вычисляется по свойствам из `PhotoAppUser`.
 
 Для этого:
-1. Добавь в класс `PhotoAppUser` булево поле `Paid`.
+1. Добавь в класс `PhotoAppUser` булево свойство `Paid`.
 2. Создай миграцию, т.к. надо добавить новую колонку в таблицу пользователей:
    `dotnet ef migrations add Paid --context UsersDbContext`
 2. Разбери generic-параметр `TUser` в методе `SeedWithSampleUsersAsync`, заменив его использования
    на тип `PhotoAppUser`.
-3. Сделай так, чтобы пользователю `cristina` при создании в поле `Paid` выставлялось значение `true`. 
+3. Сделай так, чтобы пользователю `cristina` при создании в свойство `Paid` выставлялось значение `true`. 
 4. Самое важное! Допиши `CustomClaimsPrincipalFactory` в `Services/Authorization/CustomClaimsPrincipalFactory.cs`.
-   Сначала замени `IdentityUser` на `PhotoAppUser`, а затем сделай так, чтобы пользователю с `Paid == true`
-   выставлялся claim `subscription` со значением `paid`.
+   Сначала замени во всем файле использование `IdentityUser` на `PhotoAppUser`, 
+   а затем сделай так, чтобы пользователю с `Paid == true` выставлялся claim `subscription` со значением `paid`.
 5. Зарегистрируй фабрику в `IdentityHostingStartup.cs`:
    `services.AddScoped<IUserClaimsPrincipalFactory<PhotoAppUser>, CustomClaimsPrincipalFactory>()`
 
 Убедись, что пользователю `cristina` доступно добавление фото, `vicky` не доступно.
 
 Как видишь, определив собственную `UserClaimsPrincipalFactory`,
-можно выставлять claims для пользователя по произвольным правилам.
+можно выставить пользователю нужные claims по произвольным правилам «на лету»,
+т.е. без хранения самих claims в базе данных.
 
 
 ### Задача 4.3. Обработчик для требования
@@ -494,11 +500,11 @@ options.ClientSecret = configuration["Authentication:Google:ClientSecret"];
 1. Перейди на страницу https://developers.google.com/identity/sign-in/web/sign-in#before_you_begin
 2. Нажми кнопку «Configure Project»
 3. Введи имя нового проекта
-4. Выбери опцию Web server и введи https://localhost:5001/signin-google в качестве «Authorized redirect URIs»
-5. Нажми на кнопку «Create», а затем получи Client ID и Client Secret.
+4. Выбери опцию Web server и введи https://localhost:44398/signin-google в качестве «Authorized redirect URIs».
+   Введи https://localhost:5001/signin-google, если запускаешь приложение через dotnet CLI.
+5. Нажми на кнопку «Create», а затем получи Client ID и Client Secret
 
-
-https://localhost:5001/signin-google — это путь, по которому Google отправит данные пользователя
+`/signin-google` — это путь, по которому Google отправит данные пользователя
 после успешной аутентификации. Такой адрес используется по умолчанию в ASP.NET Core, соответственно,
 данные от Google будут успешно получены и обработаны Authentication Middleware.
 
