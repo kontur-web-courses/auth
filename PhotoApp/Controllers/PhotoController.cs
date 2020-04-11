@@ -16,19 +16,21 @@ namespace PhotoApp.Controllers
     public class PhotoController : Controller
     {
         private readonly IPhotoRepository photoRepository;
-        private readonly IHostingEnvironment hostingEnvironment;
+        private readonly IWebHostEnvironment env;
+        private readonly IMapper mapper;
 
-        public PhotoController(IPhotoRepository photoRepository, IHostingEnvironment hostingEnvironment)
+        public PhotoController(IPhotoRepository photoRepository, IWebHostEnvironment env, IMapper mapper)
         {
             this.photoRepository = photoRepository;
-            this.hostingEnvironment = hostingEnvironment;
+            this.env = env;
+            this.mapper = mapper;
         }
 
         public async Task<IActionResult> Index()
         {
             var ownerId = GetOwnerId();
             var photoEntities = await photoRepository.GetPhotosAsync(ownerId);
-            var photos = Mapper.Map<IEnumerable<Photo>>(photoEntities);
+            var photos = mapper.Map<IEnumerable<Photo>>(photoEntities);
 
             var model = new PhotoIndexModel(photos.ToList());
             return View(model);
@@ -40,7 +42,7 @@ namespace PhotoApp.Controllers
             if (photoEntity == null)
                 return NotFound();
 
-            var photo = Mapper.Map<Photo>(photoEntity);
+            var photo = mapper.Map<Photo>(photoEntity);
 
             var model = new GetPhotoModel(photo);
             return View(model);
@@ -71,7 +73,7 @@ namespace PhotoApp.Controllers
             if (photoEntity == null)
                 return NotFound();
 
-            Mapper.Map(editPhotoModel, photoEntity);
+            mapper.Map(editPhotoModel, photoEntity);
 
             await photoRepository.UpdatePhotoAsync(photoEntity);
             if (!await photoRepository.SaveAsync())
@@ -111,7 +113,7 @@ namespace PhotoApp.Controllers
                 return View();
 
             var fileName = SavePhotoFile(file);
-            var photoEntity = Mapper.Map<PhotoEntity>(addPhotoModel);
+            var photoEntity = mapper.Map<PhotoEntity>(addPhotoModel);
             photoEntity.FileName = fileName;
             var ownerId = GetOwnerId();
             photoEntity.OwnerId = ownerId;
@@ -133,7 +135,7 @@ namespace PhotoApp.Controllers
                 photoBytes = memoryStream.ToArray();
             }
 
-            var webRootPath = hostingEnvironment.WebRootPath;
+            var webRootPath = env.WebRootPath;
             var fileName = Guid.NewGuid() + ".jpg";
             var filePath = Path.Combine($"{webRootPath}/photos/{fileName}");
             System.IO.File.WriteAllBytes(filePath, photoBytes);
