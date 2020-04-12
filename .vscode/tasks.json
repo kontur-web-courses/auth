@@ -9,7 +9,7 @@
                 "build",
                 "${workspaceFolder}/PhotoApp/PhotoApp.csproj"
             ],
-            "problemMatcher": "$tsc"
+            "problemMatcher": "$msCompile",
         },
         {
             "label": "publish",
@@ -19,7 +19,7 @@
                 "publish",
                 "${workspaceFolder}/PhotoApp/PhotoApp.csproj"
             ],
-            "problemMatcher": "$tsc"
+            "problemMatcher": "$msCompile",
         },
         {
             "label": "watch",
@@ -30,7 +30,7 @@
                 "run",
                 "${workspaceFolder}/PhotoApp/PhotoApp.csproj"
             ],
-            "problemMatcher": "$tsc"
+            "problemMatcher": "$msCompile",
         }
     ]
 }

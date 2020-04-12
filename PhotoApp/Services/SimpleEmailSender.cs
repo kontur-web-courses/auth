@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace PhotoApp.Services
@@ -13,7 +14,7 @@ namespace PhotoApp.Services
     public class SimpleEmailSender : IEmailSender
     {
         private readonly ILogger<SimpleEmailSender> logger;
-        private readonly IHostingEnvironment hostingEnvironment;
+        private readonly IWebHostEnvironment env;
         private readonly string host;
         private readonly int port;
         private readonly bool enableSSL;
@@ -21,12 +22,12 @@ namespace PhotoApp.Services
         private readonly string password;
 
         public SimpleEmailSender(ILogger<SimpleEmailSender> logger,
-            IHostingEnvironment hostingEnvironment,
+            IWebHostEnvironment hostingEnvironment,
             string host, int port, bool enableSSL,
             string userName, string password)
         {
             this.logger = logger;
-            this.hostingEnvironment = hostingEnvironment;
+            this.env = hostingEnvironment;
             this.host = host;
             this.port = port;
             this.enableSSL = enableSSL;
@@ -36,7 +37,7 @@ namespace PhotoApp.Services
 
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
-            if (hostingEnvironment.IsDevelopment())
+            if (env.IsDevelopment())
             {
                 var message = new StringBuilder();
                 message.AppendLine();

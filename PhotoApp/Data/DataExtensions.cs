@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace PhotoApp.Data
@@ -17,8 +18,8 @@ namespace PhotoApp.Data
             {
                 try
                 {
-                    var hostingEnvironment = scope.ServiceProvider.GetRequiredService<IHostingEnvironment>();
-                    if (hostingEnvironment.IsDevelopment())
+                    var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
+                    if (env.IsDevelopment())
                     {
                         scope.ServiceProvider.GetRequiredService<PhotosDbContext>().Database.Migrate();
 

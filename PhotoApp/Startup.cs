@@ -28,6 +28,10 @@ namespace PhotoApp
             if (env.IsDevelopment())
                 mvc.AddRazorRuntimeCompilation();
 
+            // NOTE: Подключение IHttpContextAccessor, чтобы можно было получать HttpContext там,
+            // где это не получается сделать более явно.
+            services.AddHttpContextAccessor();
+
             services.AddDbContext<PhotosDbContext>(o =>
                 o.UseSqlite(configuration.GetConnectionString("PhotosDbContextConnection")));
             // NOTE: Вместо Sqlite можно использовать LocalDB от Microsoft или другой SQL Server
@@ -55,16 +59,15 @@ namespace PhotoApp
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app)
         {
-            // TODO поддержать страницу Exception, которая возвращает 500, либо как в BadNews
             if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();
             else
-                app.UseExceptionHandler("/Errors/Exception");
+                app.UseExceptionHandler("/Exception");
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
-            app.UseStatusCodePagesWithReExecute("/Error/StatusCode/{0}");
+            app.UseStatusCodePagesWithReExecute("/StatusCode/{0}");
 
             app.UseRouting();
             app.UseEndpoints(endpoints =>

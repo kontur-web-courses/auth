@@ -10,7 +10,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/PhotoApp/bin/Debug/netcoreapp2.2/PhotoApp.dll",
+            "program": "${workspaceFolder}/PhotoApp/bin/Debug/netcoreapp3.1/PhotoApp.dll",
             "args": [],
             "cwd": "${workspaceFolder}/PhotoApp",
             "stopAtEntry": false,

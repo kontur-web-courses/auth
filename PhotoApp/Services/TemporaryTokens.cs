@@ -9,7 +9,7 @@ namespace PhotoApp.Services
     public static class TemporaryTokens
     {
         public static SymmetricSecurityKey SigningKey =>
-            new SymmetricSecurityKey(Encoding.ASCII.GetBytes("Ne!0_0!vzlomayesh!^_^!nicogda!"));
+            new SymmetricSecurityKey(Encoding.ASCII.GetBytes("Ne!0_0!vzlomayesh!^_^!nikogda!"));
 
         public const string CookieName = "TemporaryToken";
 
