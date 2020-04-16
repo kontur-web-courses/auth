@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/PhotoApp/PhotoApp.csproj"
+                "${workspaceFolder}/PhotosApp/PhotosApp.csproj"
             ],
             "problemMatcher": "$msCompile",
         },
@@ -17,7 +17,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/PhotoApp/PhotoApp.csproj"
+                "${workspaceFolder}/PhotosApp/PhotosApp.csproj"
             ],
             "problemMatcher": "$msCompile",
         },
@@ -28,7 +28,7 @@
             "args": [
                 "watch",
                 "run",
-                "${workspaceFolder}/PhotoApp/PhotoApp.csproj"
+                "${workspaceFolder}/PhotosApp/PhotosApp.csproj"
             ],
             "problemMatcher": "$msCompile",
         }

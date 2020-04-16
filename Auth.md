@@ -12,9 +12,9 @@ dotnet dev-certs https --trust
 ```
 
 Запусти приложение под отладкой. Должен запусться браузер и открыть стартовую страницу приложения.
-Убедись, что при запуске в папке `PhotoApp` автоматически создался файл `PhotoApp.db` с базой данных Sqlite.
+Убедись, что при запуске в папке `PhotosApp` автоматически создался файл `PhotosApp.db` с базой данных Sqlite.
 
-Открой файл `PhotoApp.db` с помощью сервиса https://sqliteonline.com/.
+Открой файл `PhotosApp.db` с помощью сервиса https://sqliteonline.com/.
 Убедись, что в нем есть таблица `Photos`, выведи записи из нее.
 
 
@@ -32,13 +32,13 @@ dotnet tool install -g dotnet-aspnet-codegenerator
 ```
 
 Кроме того, в проект надо добавить NuGet-пакеты для кодогенерации.
-Выполни в папке с проектом PhotoApp:
+Выполни в папке с проектом PhotosApp:
 ```bash
 dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design
 dotnet add package Microsoft.EntityFrameworkCore.Design
 ```
 
-Наконец, можно выполнить команду генерации кода `Identity` (также в папке с проектом PhotoApp):
+Наконец, можно выполнить команду генерации кода `Identity` (также в папке с проектом PhotosApp):
 ```bash
 dotnet aspnet-codegenerator identity -dc UsersDbContext -u PhotoAppUser -sqlite
 ```
@@ -50,7 +50,7 @@ dotnet aspnet-codegenerator identity -dc UsersDbContext -u PhotoAppUser -sqlite
 - что, в качестве базы данных надо использовать Sqlite, а не SQL Server.
 
 
-В проекте `PhotoApp` в папке `Areas/Identity` был сгенерирован требующийся код.
+В проекте `PhotosApp` в папке `Areas/Identity` был сгенерирован требующийся код.
 
 `Area` в ASP.NET Core MVC — это в каком-то смысле подприложение с собственной адресацией.
 В случае `Identity` все адреса страниц будут иметь префикс `/Indentity`, после которого будет обычный путь до страницы.
@@ -148,7 +148,7 @@ dbContext.Database.Migrate()
 
 Посмотри как этот метод используется в файле `Data/DataExtensions.cs` для `PhotosDbContext`,
 и напиши аналогичный код для `UsersDbContext`.
-В результате, если файл `PhotoApp.db` удален, то при запуске приложения
+В результате, если файл `PhotosApp.db` удален, то при запуске приложения
 он автоматически восстановится со всеми таблицами.
 
 
@@ -324,7 +324,7 @@ https://docs.microsoft.com/ru-ru/aspnet/core/security/authentication/identity-co
 Давай донастроим. Для этого:
 
 1. Скопируй явную конфигурацию из документации в `IdentityHostingStartup.cs`.
-2. Выстави `options.Cookie.Name` значение `"PhotoApp.Auth"`, чтобы сессия хранилась в cookie с известным именем.
+2. Выстави `options.Cookie.Name` значение `"PhotosApp.Auth"`, чтобы сессия хранилась в cookie с известным именем.
 3. Обрати внимание на настройку `options.Cookie.HttpOnly = true`. Это значит, что cookie не будет доступна
 клиентским скриптам, что обычно правильно и защищает пользователя от атак со скриптов.
 4. Настройка `options.SlidingExpiration = true` означает, что сессия не протухнет,
@@ -387,7 +387,7 @@ services.ConfigureApplicationCookie(options =>
 
 1. Сконфигурируй `TicketsDbContext` в `IdentityHostingStartup.cs` аналогично `UsersDbContext`
 2. Добавь значение для `TicketsDbContextConnection` в `appsettings.json`,
-причем можешь снова использовать `PhotoApp.db` в качестве файла БД
+причем можешь снова использовать `PhotosApp.db` в качестве файла БД
 3. `dotnet ef migrations add Tickets --context TicketsDbContext`
 4. `dotnet ef database update --context TicketsDbContext`,
 либо добавить `dbContext.Database.Migrate()` в `Data/DataExtensions.cs`
