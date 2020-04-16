@@ -1,0 +1,22 @@
+﻿@model EditPhotoModel
+@{
+    ViewData["Title"] = "Изменить подпись";
+}
+
+<form asp-action="EditPhoto" method="post" role="form">
+    <div class="row h-100 justify-content-center">
+        <div class="leftMargin topMargin">
+            <h2>Изменить подпись у фото</h2>
+            <div class="form-group">
+                <div><label asp-for="Title">Подпись к фото</label></div>
+                <input asp-for="Title"/>
+            </div>
+
+            <div class="form-group">
+                <div>
+                    <input type="submit" class="btn btn-primary" value="Изменить подпись"/>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
