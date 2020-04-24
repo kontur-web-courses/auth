@@ -203,7 +203,7 @@ private string GetOwnerId()
 
 2. Logout работает некорректно. После него не происходит перехода на главную страницу приложения,
 а в верхнем меню остается имя пользователя. Это происходит потому, что в `_LoginPartial.cshtml`
-указан некорректный `asp-route-returnUrl`. Должен быть `@Url.Action("Index", "Photos", new { area = "" })`.
+указан некорректный `asp-route-returnUrl`. Должен быть `@Url.Action("Index", "Photo", new { area = "" })`.
 
 
 ### 1.4. Авторизация
