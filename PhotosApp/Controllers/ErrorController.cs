@@ -12,6 +12,7 @@ namespace PhotosApp.Controllers
         }
 
         [HttpGet("/StatusCode/{code}")]
+        [HttpPost("/StatusCode/{code}")]
         public IActionResult StatusCode(HttpStatusCode code)
         {
             return View(code);

@@ -3,11 +3,36 @@
     "tasks": [
         {
             "label": "build",
+            "dependsOn": ["build PhotosApp", "build PhotosService", "build IdentityServer"],
+            "problemMatcher": "$msCompile",
+        },
+        {
+            "label": "build PhotosApp",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "build",
                 "${workspaceFolder}/PhotosApp/PhotosApp.csproj"
+            ],
+            "problemMatcher": "$msCompile",
+        },
+        {
+            "label": "build PhotosService",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/PhotosService/PhotosService.csproj"
+            ],
+            "problemMatcher": "$msCompile",
+        },
+        {
+            "label": "build IdentityServer",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/IdentityServer/IdentityServer.csproj"
             ],
             "problemMatcher": "$msCompile",
         },

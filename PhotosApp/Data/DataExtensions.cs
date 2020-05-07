@@ -7,12 +7,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PhotosApp.Services.TicketStores;
 
 namespace PhotosApp.Data
 {
     public static class DataExtensions
     {
-        public static void PrepareDB(this IWebHost host)
+        public static void PrepareDB(this IHost host)
         {
             using (var scope = host.Services.CreateScope())
             {
@@ -40,7 +41,7 @@ namespace PhotosApp.Data
             dbContext.Photos.RemoveRange(dbContext.Photos);
             await dbContext.SaveChangesAsync();
 
-            var photos = new []
+            var photos = new[]
             {
                 new PhotoEntity
                 {
@@ -130,6 +131,12 @@ namespace PhotosApp.Data
             };
 
             dbContext.Photos.AddRange(photos);
+            await dbContext.SaveChangesAsync();
+        }
+
+        private static async Task SeedWithSampleTicketsAsync(this TicketsDbContext dbContext)
+        {
+            dbContext.Tickets.RemoveRange(dbContext.Tickets);
             await dbContext.SaveChangesAsync();
         }
 

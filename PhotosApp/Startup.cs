@@ -1,18 +1,22 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using PhotosApp.Clients;
+using PhotosApp.Clients.Models;
 using PhotosApp.Data;
 using PhotosApp.Models;
+using Serilog;
 
 namespace PhotosApp
 {
     public class Startup
     {
-        private readonly IWebHostEnvironment env;
+        private IWebHostEnvironment env { get; }
         private IConfiguration configuration { get; }
 
         public Startup(IWebHostEnvironment env, IConfiguration configuration)
@@ -24,6 +28,8 @@ namespace PhotosApp
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.Configure<PhotosServiceOptions>(configuration.GetSection("PhotosService"));
+
             var mvc = services.AddControllersWithViews();
             if (env.IsDevelopment())
                 mvc.AddRazorRuntimeCompilation();
@@ -32,28 +38,27 @@ namespace PhotosApp
             // где это не получается сделать более явно.
             services.AddHttpContextAccessor();
 
-            services.AddDbContext<PhotosDbContext>(o =>
-                o.UseSqlite(configuration.GetConnectionString("PhotosDbContextConnection")));
+            var connectionString = configuration.GetConnectionString("PhotosDbContextConnection")
+                ?? "Data Source=PhotosApp.db";
+            services.AddDbContext<PhotosDbContext>(o => o.UseSqlite(connectionString));
             // NOTE: Вместо Sqlite можно использовать LocalDB от Microsoft или другой SQL Server
             //services.AddDbContext<PhotosDbContext>(o =>
             //    o.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=PhotosApp;Trusted_Connection=True;"));
 
-            services.AddScoped<IPhotoRepository, PhotoRepository>();
+            services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
 
             services.AddAutoMapper(cfg =>
             {
+                cfg.CreateMap<PhotoEntity, PhotoDto>().ReverseMap();
                 cfg.CreateMap<PhotoEntity, Photo>().ReverseMap();
-
-                cfg.CreateMap<AddPhotoModel, PhotoEntity>()
-                    .ForMember(m => m.FileName, options => options.Ignore())
-                    .ForMember(m => m.Id, options => options.Ignore())
-                    .ForMember(m => m.OwnerId, options => options.Ignore());
 
                 cfg.CreateMap<EditPhotoModel, PhotoEntity>()
                     .ForMember(m => m.FileName, options => options.Ignore())
                     .ForMember(m => m.Id, options => options.Ignore())
                     .ForMember(m => m.OwnerId, options => options.Ignore());
             }, new System.Reflection.Assembly[0]);
+
+            services.AddTransient<ICookieManager, ChunkingCookieManager>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -68,6 +73,8 @@ namespace PhotosApp
             app.UseStaticFiles();
 
             app.UseStatusCodePagesWithReExecute("/StatusCode/{0}");
+
+            app.UseSerilogRequestLogging();
 
             app.UseRouting();
             app.UseEndpoints(endpoints =>

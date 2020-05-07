@@ -9,16 +9,19 @@ namespace PhotosApp.Services.TicketStores
 {
     public class EntityTicketStore : ITicketStore
     {
-        readonly TicketsDbContext dbContext;
+        private readonly DbContextOptions<TicketsDbContext> dbContextOptions;
 
-        public EntityTicketStore(TicketsDbContext dbContext)
+        public EntityTicketStore(DbContextOptions<TicketsDbContext> dbContextOptions)
         {
-            this.dbContext = dbContext;
+            this.dbContextOptions = dbContextOptions;
         }
 
         public async Task RemoveAsync(string key)
         {
-            if (Guid.TryParse(key, out var id))
+            if (!Guid.TryParse(key, out var id))
+                return;
+
+            using (var dbContext = new TicketsDbContext(dbContextOptions))
             {
                 var ticketEntity = await dbContext.Tickets.SingleOrDefaultAsync(x => x.Id == id);
                 if (ticketEntity != null)
@@ -31,7 +34,10 @@ namespace PhotosApp.Services.TicketStores
 
         public async Task RenewAsync(string key, AuthenticationTicket ticket)
         {
-            if (Guid.TryParse(key, out var id))
+            if (!Guid.TryParse(key, out var id))
+                return;
+
+            using (var dbContext = new TicketsDbContext(dbContextOptions))
             {
                 var ticketEntity = await dbContext.Tickets.FindAsync(id);
                 if (ticketEntity != null)
@@ -46,7 +52,10 @@ namespace PhotosApp.Services.TicketStores
 
         public async Task<AuthenticationTicket> RetrieveAsync(string key)
         {
-            if (Guid.TryParse(key, out var id))
+            if (!Guid.TryParse(key, out var id))
+                return null;
+
+            using (var dbContext = new TicketsDbContext(dbContextOptions))
             {
                 var ticketEntity = await dbContext.Tickets.FindAsync(id);
                 if (ticketEntity != null)
@@ -56,9 +65,8 @@ namespace PhotosApp.Services.TicketStores
 
                     return DeserializeFromBytes(ticketEntity.Value);
                 }
+                return null;
             }
-
-            return null;
         }
 
         public async Task<string> StoreAsync(AuthenticationTicket ticket)
@@ -77,8 +85,11 @@ namespace PhotosApp.Services.TicketStores
                 authenticationTicket.Expires = expiresUtc.Value;
             }
 
-            await dbContext.Tickets.AddAsync(authenticationTicket);
-            await dbContext.SaveChangesAsync();
+            using (var dbContext = new TicketsDbContext(dbContextOptions))
+            {
+                await dbContext.Tickets.AddAsync(authenticationTicket);
+                await dbContext.SaveChangesAsync();
+            }
 
             return authenticationTicket.Id.ToString();
         }

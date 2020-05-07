@@ -1,14 +1,51 @@
 ﻿@using System.Security.Claims
 @using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
 @using Microsoft.AspNetCore.DataProtection
 @using Microsoft.AspNetCore.Identity
 
 @inject IDataProtectionProvider dataProtectionProvider
+@inject ICookieManager cookieManager
 
 @{
     var cookies = Context.Request.Cookies;
-    var authCookieName = "PhotosApp.Auth";
     var user = Context.User;
+
+    void RenderCookieInfo(string cookieName, params string[] schemes)
+    {
+        var cookieValue = cookieManager.GetRequestCookie(Context, cookieName);
+        if (cookieValue != null)
+        {
+            var tickets = schemes.Select(s => ExtractTicket(cookieValue, s));
+            var ticket = tickets.FirstOrDefault(t => t != null);
+            if (ticket != null)
+            {
+                RenderTicket(ticket);
+            }
+            else
+            {
+                <div>Can't extract ticket from "@(cookieName)" cookie</div>
+            }
+        }
+        else
+        {
+            <div>Can't find "@(cookieName)" cookie</div>
+        }
+    }
+
+    void RenderTicket(AuthenticationTicket ticket)
+    {
+        <h4>Properties</h4>
+        foreach (var item in ticket.Properties?.Items)
+        {
+            <div><b>@item.Key</b>: @item.Value</div>
+        }
+        <div><br /></div>
+
+        <h4>Identity</h4>
+        RenderIdentityInfo(ticket.Principal.Identity as ClaimsIdentity);
+        <div><br /></div>
+    }
 
     void RenderIdentityInfo(ClaimsIdentity identity)
     {
@@ -23,34 +60,29 @@
                 <div style="margin-left: 30px">Claim type: <b>@claim.Type</b></div>
                 <div style="margin-left: 30px; margin-bottom: 10px;">Claim value: @claim.Value</div>
             }
-        </div>;
+        </div>
     }
-}
 
-<h2>From Cookies</h2>
-@if (cookies.TryGetValue(authCookieName, out var ticketString))
-{
-    var protector = dataProtectionProvider.CreateProtector(
-        "Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationMiddleware",
-        IdentityConstants.ApplicationScheme,
-        "v2");
-    var ticketDataFormat = (ISecureDataFormat<AuthenticationTicket>)new TicketDataFormat(protector);
-    var ticket = ticketDataFormat.Unprotect(ticketString, null);
-
-    <h4>Properties</h4>
-    foreach (var item in ticket.Properties.Items)
+    AuthenticationTicket ExtractTicket(string cookieValue, string scheme)
     {
-        <div><b>@item.Key</b>: @item.Value</div>
+        var protector = dataProtectionProvider.CreateProtector(
+            "Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationMiddleware",
+            scheme,
+            "v2");
+        var ticketDataFormat = (ISecureDataFormat<AuthenticationTicket>)new TicketDataFormat(protector);
+        var ticket = ticketDataFormat.Unprotect(cookieValue, null);
+        return ticket;
     }
-    <div><br /></div>
-
-    <h4>Identity</h4>
-    RenderIdentityInfo(ticket.Principal.Identity as ClaimsIdentity);
-    <div><br /></div>
 }
-else
-{
-    <div>Can't find "@(authCookieName)" cookie</div>
+
+<h2>From "PhotosApp.Auth" Cookie</h2>
+@{
+    RenderCookieInfo("PhotosApp.Auth", IdentityConstants.ApplicationScheme, "Cookie");
+}
+
+<h2>From "PhotosApp.Auth.External" Cookie</h2>
+@{
+    RenderCookieInfo("PhotosApp.Auth.External", IdentityConstants.ExternalScheme);
 }
 
 <h2>From User</h2>

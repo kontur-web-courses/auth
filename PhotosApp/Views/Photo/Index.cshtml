@@ -12,7 +12,7 @@
                 <div class="pull-left col-md-4">
                     <div>
                         <a asp-controller="Photo" asp-action="GetPhoto" asp-route-id="@item.Id">
-                            <img class="photoPreview" src="@("/photos/" + item.FileName)"/>
+                            <img class="photoPreview" src="@("/photos/" + item.Id)"/>
                         </a>
                     </div>
                     <div>

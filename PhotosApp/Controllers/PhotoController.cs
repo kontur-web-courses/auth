@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PhotosApp.Data;
@@ -15,21 +13,19 @@ namespace PhotosApp.Controllers
 {
     public class PhotoController : Controller
     {
-        private readonly IPhotoRepository photoRepository;
-        private readonly IWebHostEnvironment env;
+        private readonly IPhotosRepository photosRepository;
         private readonly IMapper mapper;
 
-        public PhotoController(IPhotoRepository photoRepository, IWebHostEnvironment env, IMapper mapper)
+        public PhotoController(IPhotosRepository photosRepository, IMapper mapper)
         {
-            this.photoRepository = photoRepository;
-            this.env = env;
+            this.photosRepository = photosRepository;
             this.mapper = mapper;
         }
 
         public async Task<IActionResult> Index()
         {
             var ownerId = GetOwnerId();
-            var photoEntities = await photoRepository.GetPhotosAsync(ownerId);
+            var photoEntities = await photosRepository.GetPhotosAsync(ownerId);
             var photos = mapper.Map<IEnumerable<Photo>>(photoEntities);
 
             var model = new PhotoIndexModel(photos.ToList());
@@ -38,7 +34,7 @@ namespace PhotosApp.Controllers
 
         public async Task<IActionResult> GetPhoto(Guid id)
         {
-            var photoEntity = await photoRepository.GetPhotoAsync(id);
+            var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
             if (photoEntity == null)
                 return NotFound();
 
@@ -48,9 +44,19 @@ namespace PhotosApp.Controllers
             return View(model);
         }
 
+        [HttpGet("photos/{id}")]
+        public async Task<IActionResult> GetPhotoFile(Guid id)
+        {
+            var photoContent = await photosRepository.GetPhotoContentAsync(id);
+            if (photoContent == null)
+                return NotFound();
+
+            return File(photoContent.Content, photoContent.ContentType, photoContent.FileName);
+        }
+
         public async Task<IActionResult> EditPhoto(Guid id)
         {
-            var photo = await photoRepository.GetPhotoAsync(id);
+            var photo = await photosRepository.GetPhotoMetaAsync(id);
             if (photo == null)
                 return NotFound();
 
@@ -69,29 +75,26 @@ namespace PhotosApp.Controllers
             if (editPhotoModel == null || !ModelState.IsValid)
                 return View();
 
-            var photoEntity = await photoRepository.GetPhotoAsync(editPhotoModel.Id);
+            var photoEntity = await photosRepository.GetPhotoMetaAsync(editPhotoModel.Id);
             if (photoEntity == null)
                 return NotFound();
 
             mapper.Map(editPhotoModel, photoEntity);
 
-            await photoRepository.UpdatePhotoAsync(photoEntity);
-            if (!await photoRepository.SaveAsync())
-                throw new Exception($"Updating photo with {editPhotoModel.Id} failed on save.");
+            if (!await photosRepository.UpdatePhotoAsync(photoEntity))
+                return StatusCode(StatusCodes.Status409Conflict);
 
             return RedirectToAction("Index");
         }
 
         public async Task<IActionResult> DeletePhoto(Guid id)
         {
-            var photoEntity = await photoRepository.GetPhotoAsync(id);
+            var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
             if (photoEntity == null)
                 return NotFound();
 
-            await photoRepository.DeletePhotoAsync(photoEntity);
-
-            if (!await photoRepository.SaveAsync())
-                throw new Exception($"Deleting photo with {id} failed on save.");
+            if (!await photosRepository.DeletePhotoAsync(photoEntity))
+                return StatusCode(StatusCodes.Status409Conflict);
 
             return RedirectToAction("Index");
         }
@@ -112,34 +115,23 @@ namespace PhotosApp.Controllers
             if (file == null || file.Length == 0)
                 return View();
 
-            var fileName = SavePhotoFile(file);
-            var photoEntity = mapper.Map<PhotoEntity>(addPhotoModel);
-            photoEntity.FileName = fileName;
+            var title = addPhotoModel.Title;
             var ownerId = GetOwnerId();
-            photoEntity.OwnerId = ownerId;
 
-            await photoRepository.AddPhotoAsync(photoEntity);
-            if (!await photoRepository.SaveAsync())
-                throw new Exception($"Adding a photo failed on save.");
-
-            return RedirectToAction("Index");
-        }
-
-        private string SavePhotoFile(IFormFile file)
-        {
-            byte[] photoBytes;
+            byte[] content;
             using (var fileStream = file.OpenReadStream())
-            using (var memoryStream = new MemoryStream())
             {
-                fileStream.CopyTo(memoryStream);
-                photoBytes = memoryStream.ToArray();
+                using (var memoryStream = new MemoryStream())
+                {
+                    fileStream.CopyTo(memoryStream);
+                    content = memoryStream.ToArray();
+                }
             }
 
-            var webRootPath = env.WebRootPath;
-            var fileName = Guid.NewGuid() + ".jpg";
-            var filePath = Path.Combine($"{webRootPath}/photos/{fileName}");
-            System.IO.File.WriteAllBytes(filePath, photoBytes);
-            return fileName;
+            if (!await photosRepository.AddPhotoAsync(title, ownerId, content))
+                return StatusCode(StatusCodes.Status409Conflict);
+
+            return RedirectToAction("Index");
         }
 
         private string GetOwnerId()

@@ -2,7 +2,7 @@
 
 ## 0. Запуск
 
-Требуется научиться запускать приложение и убедиться, что все хорошо.
+Требуется научиться запускать приложение `PhotosApp` и убедиться, что все хорошо.
 
 Приложение использует https, поэтому для корректной работы понадобится сертификат.
 .NET Core умеет создавать сертификаты для localhost. Только надо установить такой сертификат в доверенные.
@@ -22,7 +22,7 @@ dotnet dev-certs https --trust
 
 ### 1.1. Scaffolding
 
-Требуется сгенерировать код `Identity`, а затем ее корректно подключить к приложению.
+Требуется сгенерировать код `Identity`, а затем ее корректно подключить к приложению `PhotosApp`.
 
 *Scaffolding (англ. строительные леса) — генерация кода по заданной разработчиком спецификации.*
 
@@ -391,6 +391,9 @@ services.ConfigureApplicationCookie(options =>
 3. `dotnet ef migrations add Tickets --context TicketsDbContext`
 4. `dotnet ef database update --context TicketsDbContext`,
 либо добавить `dbContext.Database.Migrate()` в `Data/DataExtensions.cs`
+5. Вызови метод `SeedWithSampleTicketsAsync` в `Data/DataExtensions.cs`, передав туда `TicketsDbContext`,
+чтобы зачищать все сессии перед стартом приложения. Пользователи каждый раз пересоздаются — значит
+нет смысла хранить сессии.
 
 После подключения снова залогинься и перейди на страницу Decode.
 Обрати внимание, что теперь в аутентификационной куке хранится только идентификатор сессии.
@@ -539,7 +542,7 @@ policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
 services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
 ```
 
-Защити действия `GetPhoto`, `EditPhoto`, `DeletePhoto` в `PhotoController` с помощью новой политики.
+Защити действия `GetPhoto`, `GetPhotoFile`, `EditPhoto`, `DeletePhoto` в `PhotoController` с помощью новой политики.
 Заметь, что это нормально использовать несколько атрибутов `Authorize` у метода.
 В этом случае для выполнения действия должны быть выполнены требования каждого атрибута.
 
@@ -579,8 +582,7 @@ options.ClientSecret = configuration["Authentication:Google:ClientSecret"];
 1. Перейди на страницу https://developers.google.com/identity/sign-in/web/sign-in#before_you_begin
 2. Нажми кнопку «Configure Project»
 3. Введи имя нового проекта
-4. Выбери опцию Web server и введи https://localhost:44398/signin-google в качестве «Authorized redirect URIs».
-Введи https://localhost:5001/signin-google, если запускаешь приложение через dotnet CLI.
+4. Выбери опцию Web server и введи https://localhost:7001/signin-google в качестве «Authorized redirect URIs».
 5. Нажми на кнопку «Create», а затем получи Client ID и Client Secret
 
 `/signin-google` — это путь, по которому Google отправит данные пользователя
@@ -655,6 +657,11 @@ services.AddTransient<IEmailSender, SimpleEmailSender>(serviceProvider =>
 Если нужно, чтобы без подтверждения email нельзя было войти в аккаунт,
 следует изменить настройку `SignIn.RequireConfirmedEmail` для `Identity`.
 Но в обучающем проекте нам это не нужно.
+
+
+Хоть подтвреждение почты является важной частью регистрации, в дальнейших заданиях она не понадобится.
+Поэтому можно вернуть обратна настройки безопасности аккаунта Google: https://myaccount.google.com/lesssecureapps
+А для настроек `UserName` и `Password` задай пустые строки в качестве значений.
 
 
 ### 6. Json Web Token
@@ -823,7 +830,8 @@ services.AddAuthorization(options =>
 Качественный способ решить эту проблему — везде для конфигурирования авторизации использовать политики,
 как ранее использовали `[Authorize(Policy = "Beta")]`. Глядя на политику по умолчанию и другие политики,
 добавь политику `"Dev"`. Тебе пригодятся методы `RequireRole` и `AddAuthenticationSchemes` у `policyBuilder`.
-Затем воспользуйся этой политикой в `DevController`. После этого ссылка «Decode» должна заработать.
+Затем воспользуйся этой политикой в `DevController` и измени условие на показ ссылки «Decode» в `_Layout.cshtml`.
+После этого ссылка «Decode» должна заработать.
 Причем как для аутентификации по токену, так и для пользователя `dev@gmail.com`.
 
 *Замечание. Порядок добавления схем в политику имеет значение.*

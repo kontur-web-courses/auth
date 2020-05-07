@@ -10,12 +10,12 @@ namespace PhotosApp.Services.Authorization
 {
     public class MustOwnPhotoHandler : AuthorizationHandler<MustOwnPhotoRequirement>
     {
-        private readonly IPhotoRepository photoRepository;
+        private readonly IPhotosRepository photosRepository;
         private readonly IHttpContextAccessor httpContextAccessor;
 
-        public MustOwnPhotoHandler(IPhotoRepository photoRepository, IHttpContextAccessor httpContextAccessor)
+        public MustOwnPhotoHandler(IPhotosRepository photosRepository, IHttpContextAccessor httpContextAccessor)
         {
-            this.photoRepository = photoRepository;
+            this.photosRepository = photosRepository;
             this.httpContextAccessor = httpContextAccessor;
         }
 
@@ -28,15 +28,15 @@ namespace PhotosApp.Services.Authorization
             // NOTE: RouteData содержит информацию о пути и параметрах запроса.
             // Ее сформировал UseRouting и к моменту авторизации уже отработал.
             var routeData = httpContext?.GetRouteData();
-            
+
             // NOTE: Использовать, если нужное условие выполняется
             // context.Succeed(requirement);
 
             // NOTE: Использовать, если нужное условие не выполняется
             // context.Fail();
 
-            // NOTE: Этот метод проверяет является ли пользователь владельцем фотографии
-            // await photoRepository.IsPhotoOwnerAsync(...)
+            // NOTE: Этот метод получает информацию о фотографии, в том числе о владельце
+            // await photosRepository.GetPhotoMetaAsync(...)
 
             throw new NotImplementedException();
         }
