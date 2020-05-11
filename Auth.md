@@ -1,8 +1,9 @@
 # Auth
 
-## 0. Запуск
+## 0. Подготовка
 
 Требуется научиться запускать приложение `PhotosApp` и убедиться, что все хорошо.
+
 
 Приложение использует https, поэтому для корректной работы понадобится сертификат.
 .NET Core умеет создавать сертификаты для localhost. Только надо установить такой сертификат в доверенные.
@@ -11,11 +12,37 @@
 dotnet dev-certs https --trust
 ```
 
+
 Запусти приложение под отладкой. Должен запусться браузер и открыть стартовую страницу приложения.
 Убедись, что при запуске в папке `PhotosApp` автоматически создался файл `PhotosApp.db` с базой данных Sqlite.
 
 Открой файл `PhotosApp.db` с помощью сервиса https://sqliteonline.com/.
 Убедись, что в нем есть таблица `Photos`, выведи записи из нее.
+
+
+На всякий случай небольшой ликбез.
+
+В этом задании надо будет часто подключать `using` к файлу после вставки кода.
+Вручную прописывать `using` не надо. Надо установить курсор на слово с неизвестным типом,
+нажать мышкой на появившуюся слева лампочку и выбрать команду добавляющую `using`.
+
+Конечно, проще это сделать с помощью сочетания клавиш:
+
+- Visual Studio Code: `Ctrl+.`
+- Visual Studio: `Ctrl+.` или `Alt+Enter`
+- ReSharper: `Alt+Enter`
+- Rider: `Alt+Enter`
+
+В этом задании придется работать с большим количеством файлов и может быть удобно
+искать файлы по имени, а также типы по имени. Обычно IDE это прекрасно умеют делать:
+главное знать сочетание клавиш для этого функционала.
+
+Используй сочетание клавиш для своей IDE и найди в решении файл `RemotePhotosRepository.cs`:
+
+- Visual Studio Code: `Ctrl+T`
+- Visual Studio: `Ctrl+T`
+- ReSharper: `Ctrl+T`
+- Rider: `Ctrl+T` или `Shift, Shift`
 
 
 ## 1. Identity
@@ -1227,3 +1254,1200 @@ httpClient.SetBearerToken(accessToken);
 После этого должна появиться надпись «Signature Verified».
 
 Ура, токен проверен!
+
+
+## 8. Аутентификация с помощью OpenID Connect
+
+OpenID Connect (кратко OIDC) — расширение OAuth, которое позволяет стандартным образом получать
+информацию о пользователе в виде id token от сервера авторизации для аутентификации пользователей. Далее предстоит подключить
+сервер авторизации Google по OpenID Connect, а также донастроить и подключить `IdentityServer`.
+
+
+### 8.1. Шаг назад
+
+В нескольких последующих заданиях нет необходимости в отдельном сервисе `PhotosService`.
+Чтобы не приходилось его запускать, подключи `LocalPhotosRepository` вместо `RemotePhotosRepository` в `PhotosApp`:
+```cs
+services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
+//services.AddScoped<IPhotosRepository, RemotePhotosRepository>();
+```
+Нет смысла удалять строчку с `RemotePhotosRepository`, потому что далее она пригодится.
+
+
+### 8.2. Аутентификация через Google по OpenID Connect
+
+Google уже поддерживает протокол OpenID Connect, поэтому можно подключить Google по OIDC, а не по OAuth.
+
+Для этого найди код подключения Google и замени его вот так:
+```cs
+//.AddGoogle("Google", options =>
+//{
+//    options.ClientId = context.Configuration["Authentication:Google:ClientId"];
+//    options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
+//})
+.AddOpenIdConnect(
+    authenticationScheme: "Google",
+    displayName: "Google",
+    options =>
+    {
+        options.Authority = "https://accounts.google.com/";
+        options.ClientId = context.Configuration["Authentication:Google:ClientId"];
+        options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
+
+        options.CallbackPath = "/signin-google";
+        options.SignedOutCallbackPath = "/signout-callback-google";
+        options.RemoteSignOutPath = "/signout-google";
+
+        options.Scope.Add("email");
+    });
+```
+
+Настроек стало больше, они стали более явными:
+
+- `Authority` — адрес сервера авторизации
+- `CallbackPath` — адрес, на который будет возвращаться пользователь после успешного входа.
+Адрес можно поменять в настройках клиента Google. Обработчик для запросов по этому пути будет добавлен
+за счет `AddOpenIdConnect` и делать что-то дополнительно не нужно.
+- `SignedOutCallbackPath` — адрес, на который будет возвращаться пользователь после успешного выхода
+из аккаунта Google. Обработчик для запросов по этому пути будет добавлен за счет `AddOpenIdConenct`.
+В любом случае с нашими настройками клиента таких запросов не будет.
+- `RemoteSignOutPath` — адрес, на который происходил бы переход после `SignedOutCallbackPath`.
+- `Scope.Add("email")` — дополнительно к скоупам oidc и profile запрашивается информация об email,
+которая полезна при создании аккаунта в Identity.
+
+Проверь, что аутентификация через Google по OpenID Connect работает. Как будто ничего и не поменялось.
+
+
+### 8.3. Indentity.External
+
+Пришло время лучше разобраться как работает аутентификация с помощью внешних провайдеров при использовании Identity.
+
+Когда подключается Identity с помощью `AddDefaultIdentity` происходит регистрация нескольких схем аутентификации,
+работающих по cookie. Основная из них уже знакомая `"Identity.Application"`. Но при первом входе пользователя
+с помощью внешнего провайдера используется другая схема — `"Identity.External"`.
+
+
+Разберем на конкретном примере Google и OIDC, хотя логика одинаковая для всех внешних провайдеров аутентификации.
+
+Пусть пользователь решил войти через Google по OIDC. Он перенаправляется на сервер авторизации Google,
+аутентифицируется там, а затем возвращается обратно в приложение по адресу `/signin-google`.
+Этот запрос обрабатывается и вся ценная информация о пользователе сохраняется в некоторую «другую схему аутентификации».
+
+Что же это за схема? Это схема, которая была указана `options.SignInScheme` при конфигурировании `AddOpenIdConnect`.
+Но сейчас она не указана. Не проблема! Есть еще два кандидата, которые вот так регистрируются внутри `AddDefaultIdentity`:
+```cs
+services.AddAuthentication(o =>
+    {
+        o.DefaultScheme = IdentityConstants.ApplicationScheme;
+        o.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+    })
+```
+`DefaultSignInScheme` — это более приоритетный кандидат в этом случае,
+а `DefaultScheme` — кандидат для «любой непонятной ситуации» с аутентификацией.
+
+Таким образом в нашем случае вся ценная информация о пользователе, которая была получена от Google будет сохранена
+в схему `"Identity.External"` (это значение константы `IdentityConstants.ExternalScheme`),
+т.е. в cookie, связанную с этой схемой.
+
+После этого пользователю предлагается создать аккаунт в приложении по схеме `"Identity.Application"`
+на основании данных из схемы `"Identity.External"`, возможно подтвердить его через почту и войти.
+А cookie схемы `"Indentity.External"` по умолчанию существует совсем недолго и больше не используется.
+
+При следующем входе через Google, например, после закрытия браузера, аккаунт в приложении уже существует
+и можно сразу использовать схему `"Identity.Application"`, поэтому схема `"Identity.External"` не используется
+и cookie для нее не создается.
+
+
+Убедись, что все работает именно так, как описано.
+
+
+Для начала — подготовка.
+
+После вызова `AddDefaultIdentity` явно настрой cookie схемы `"Identity.External"`:
+```cs
+services.ConfigureExternalCookie(options =>
+{
+    options.Cookie.Name = "PhotosApp.Auth.External";
+    options.Cookie.HttpOnly = true;
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+    options.SlidingExpiration = true;
+});
+```
+Здесь меняется имя куки, а остальные значения приведены для ознакомления и соответствуют значениям по-умолчанию.
+
+Понизь требования для захода на страницу `Decode`:
+```cs
+options.AddPolicy(
+    "Dev",
+    policyBuilder =>
+    {
+        policyBuilder.RequireAuthenticatedUser();
+        //policyBuilder.RequireRole("Dev");
+        //policyBuilder.AddAuthenticationSchemes(
+        //    JwtBearerDefaults.AuthenticationScheme,
+        //    IdentityConstants.ApplicationScheme);
+    });
+```
+
+Закомментируй подключение `SessionStore` при вызове метода `ConfigureApplicationCookie`:
+```cs
+//options.SessionStore = serviceProvider.GetRequiredService<EntityTicketStore>();
+```
+Это нужно, чтобы посмотреть значения из cookie, а не просто идентификатор сессии.
+
+
+Теперь можно проверять:
+
+1. Запусти приложение, открой его в браузере, зайди в него с помощью Google
+и создай аккаунт в приложении.
+2. Перейди на страницу «Decode» и убедись, что есть данные как из `PhotosApp.Auth` куки,
+так и из `PhotosApp.Auth.External` куки. Причем в `PhotosApp.Auth.External` данных значительно больше.
+3. Выйди из аккаунта с помощью кнопки «Logout», а затем снова войди с помощью Google.
+4. Перейди на страницу «Decode» и убедись, что данных в `PhotosApp.Auth.External` нет, как и самой куки.
+
+
+После входа пользователя Google передает данные в приложения в виде токенов, а уже затем информация из них
+сохраняется в cookie. Но можно сделать так, чтобы сами токены сохранялись в cookie.
+
+Добавь в вызов `AddOpenIdConnect` настройку:
+```cs
+options.SaveTokens = true;
+```
+
+Теперь зайди в приложение под аккаунтом Google и перейди на страницу «Decode».
+Теперь в `PhotosApp.Auth.External` ты увидишь `id_token`.
+Посмотри его содержимое с помощью `https://jwt.io`.
+
+Теперь можешь закомментировать настройку `options.SaveTokens`: дальше не пригодится.
+
+
+### 8.4. Генерация UI для IdentityServer
+
+Если добавить к `IdentityServer` пользовательский интерфейс, то пользователи смогут регистрироваться в нем,
+а затем использовать его для входа в сторонние приложения по OpenID Connect.
+
+
+Чтобы не делать UI с нуля, можно использовать готовый шаблон.
+
+Установи шаблоны `IdentityServer4` для dotnet CLI:
+```
+dotnet new -i IdentityServer4.Templates
+```
+
+Запусти генерацию UI в папку `IdentityServer`. Для этого из папки с solution выполни:
+```
+dotnet new is4ui -o IdentityServer
+```
+В результате в проекте `IdentityServer` должны появиться папки `Quickstart` и `Views`.
+
+*Замечание. Похоже шаблон немного «битый». Поэтому попробуй сбилдить проект и добавь недостающие using-и.*
+
+Чтобы добавленные представления и контроллеры в `IdentityServer` заработали, надо подключить MVC в `Startup.cs`.
+Для этого просто раскомментируй код в `Startup.cs`.
+
+Также надо подключить к `IdentityServer` тестовых пользователей. Для этого добавь вызов `AddTestUsers(TestUsers.Users)`
+в цепочку вызовов после `AddIdentityServer` в `Startup.cs`:
+```cs
+var builder = services.AddIdentityServer()
+    .AddInMemoryIdentityResources(Config.Ids)
+    .AddInMemoryApiResources(Config.Apis)
+    .AddInMemoryClients(Config.Clients);
+    .AddTestUsers(TestUsers.Users); 
+```
+
+
+Запусти `IdentityServer` и убедись, что https://localhost:7001/ открывается без ошибок.
+Затем перейди по ссылке в тексте «Click here to manage your stored grants», и в открывшейся форме зайди
+под пользователем `alice`. Пароль от аккаунта можно посмотреть в файле `IdentityServer/Quckstart/TestUsers.cs`.
+После успешного входа ты узнаешь, что у Alice нет «given access to any applications».
+
+
+### 8.5. Passport
+
+Пусть способ входа в `PhotosApp` через `IdentityServer` называется «Passport».
+Теперь надо этот способ входа настроить.
+
+
+В файле `Config.cs` найди статическое свойство `Clients` и добавь туда запись о новом клиенте:
+```cs
+new Client
+    {
+        ClientId = "Photos App by OIDC",
+        ClientSecrets = { new Secret("secret".Sha256()) },
+
+        AllowedGrantTypes = GrantTypes.Code,
+        // NOTE: использовать ли Proof Key for Code Exchange
+        // Это полезно для SPA и мобильных приложений, где client secret хранится у пользователя
+        RequirePkce = true,
+        // NOTE: показывать ли пользователю страницу consent со списком запрошенных разрешений
+        RequireConsent = false,
+
+        // NOTE: куда отправлять после логина
+        RedirectUris = { "https://localhost:5001/signin-passport" },
+
+        AllowedScopes = new List<string>
+        {
+            // NOTE: Позволяет запрашивать id token
+            IdentityServerConstants.StandardScopes.OpenId,
+            // NOTE: Позволяет запрашивать профиль пользователя через id token
+            IdentityServerConstants.StandardScopes.Profile,
+            // NOTE: Позволяет запрашивать email пользователя через id token
+            IdentityServerConstants.StandardScopes.Email
+        },
+
+        // NOTE: Надо ли добавлять информацию о пользователе в id token при запросе одновременно
+        // id token и access token, как это происходит в code flow.
+        // Либо придется ее получать отдельно с user info endpoint.
+        AlwaysIncludeUserClaimsInIdToken = true,
+    }
+```
+Этой записью добавляется клиент по Code Flow, т.е. так же, как был добавлен Google.
+Все остальное должно быть понятно из комментариев.
+
+Так как предлагается давать доступ к скоупам profile и email, то надо определить, что это такое.
+Для этого файле `Config.cs` найди статическое свойство `Ids` и добавь туда новые наборы ресурсов:
+```cs
+new IdentityResources.Profile(),
+new IdentityResources.Email()
+```
+
+Под каждым `IdentityResource` подразумевается некоторый скоуп, набор claims о пользователе, который клиент
+сможет получить через id token. Например, скоуп `"email"` включает в себя такие claims: `"email"`, `"email_verified"`.
+
+
+Теперь `IdentityServer` настроен, осталось настроить приложение. Используй этот шаблон и настройки клиента,
+чтобы добавить новый способ аутентификации в `IdentityHostingStartup.cs`:
+```cs
+services.AddAuthentication()
+    .AddOpenIdConnect("Passport", "Паспорт", options =>
+    {
+        options.Authority = "TODO: адрес сервера авторизации";
+
+        options.ClientId = "TODO";
+        options.ClientSecret = "TODO";
+        options.ResponseType = "code";
+
+        // NOTE: oidc и profile уже добавлены по-умолчанию
+        options.Scope.Add("TODO: запросить все доступные скоупы");
+
+        options.CallbackPath = "TODO: куда отправлять после логина";
+
+        // NOTE: все эти проверки токена выполняются по умолчанию, указаны для ознакомления
+        options.TokenValidationParameters.ValidateIssuer = true; // проверка издателя
+        options.TokenValidationParameters.ValidateAudience = true; // проверка получателя
+        options.TokenValidationParameters.ValidateLifetime = true; // проверка не протух ли
+        options.TokenValidationParameters.RequireSignedTokens = true; // есть ли валидная подпись издателя
+    });
+```
+
+
+Запусти IdentityServer и PhotosApp, а затем войди через «Паспорт» аналогично тому, как раньше входил через Google.
+Вход должен работать, email при создании аккаунта подставляться из `IdentityServer`, а информация о профиле
+пользователя видна на странице «Decode» в `PhotosApp.Auth.External` куке.
+
+
+### 8.6. Claims из внешнего провайдера
+
+Пользователи из `IdentityServer` могут входить в `PhotosApp`, но функционал приложения для них ограничен,
+потому что у них нет ни доступа к бета-версиям, ни платной подписке. Надо добавить пользователям `IdentityServer`
+права и сделать так, чтобы информация об этом попадала в `PhotosApp`.
+
+
+В начале добавь новые claims для пользователей из `IdentityServer`. Найди файл `IdentityServer/Quckstart/TestUsers.cs`
+и добавь пользователю `alice` такие claims:
+```cs
+new Claim("subscription", "paid"),
+new Claim("testing", "beta"),
+new Claim("role", "Dev")
+```
+
+Чтобы эти claims можно было запросить нужно создать новый scope для id token.
+Для этого в файле `Config.cs` добавь новый `IdentityResource` с названием `photos_app`, включающий добавленные claims:
+```cs
+new IdentityResource("photos_app", new []
+{
+    "role", "subscription", "testing"
+})
+```
+
+Дай клиенту `"Photos App by OIDC"` доступ к новому scope `photos_app`, прописав его в `AllowedScopes`.
+
+Теперь в `PhotosApp` сделай так, чтобы scope `photos_app` при аутентификации через Passport.
+Это можно сделать аналогично scope `email`.
+
+
+Самый ответственный шаг: полученные данные от сервера авторизации данные нужно сохранить.
+Пусть это происходит при создании аккаунта в приложении.
+
+Для этого в `Areas/Identity/Pages/AccountExternalLogin.cshtml.cs` найди метод `OnPostConfirmationAsync`.
+Именно этот метод вызывается после входа через внешний провайдер, если в приложении еще нет аккаунта.
+
+В начале метода получаются данные из внешней схемы:
+```cs
+var info = await _signInManager.GetExternalLoginInfoAsync();
+```
+
+Если все хорошо, то создается пользователь и к нему привязывается способ входа через внешний провайдер:
+```cs
+var user = new PhotosAppUser { UserName = Input.Email, Email = Input.Email };
+var result = await _userManager.CreateAsync(user);
+...
+result = await _userManager.AddLoginAsync(user, info);
+```
+
+И, наконец, когда все это успешно выполнено можно сохранить дополнительные claims из внешнего провайдера
+в новый аккаунт в приложении.
+Для этого после строчки `_logger.LogInformation("User created an account using {Name} provider.", info.LoginProvider);`
+добавь такой код:
+```cs
+// NOTE: сохранение полученные от провайдера claims
+if (info.Principal.HasClaim(c => c.Type == ClaimTypes.Role))
+    await _userManager.AddClaimAsync(user, info.Principal.FindFirst(ClaimTypes.Role));
+if (info.Principal.HasClaim(c => c.Type == "subscription"))
+    await _userManager.AddClaimAsync(user, info.Principal.FindFirst("subscription"));
+if (info.Principal.HasClaim(c => c.Type == "testing"))
+    await _userManager.AddClaimAsync(user, info.Principal.FindFirst("testing"));
+```
+
+
+Теперь проверка. Зайди в приложение под пользователем `alice` через Passport.
+Убедись, что ей доступно добавление фотографий и оно работает.
+Перейди на страницу «Decode» и убедись, что `subscription`, `testing` и `role` прописаны в `User`.
+Полное имя claim `role` — `http://schemas.microsoft.com/ws/2008/06/identity/claims/role`.
+Данные о User — в самом низу страницы.
+ 
+
+### 8.7. Logout из внешнего провайдера
+
+Что должно происходить, когда пользователь, вошедший через внешнего провайдера хочет выйти?
+Надо просто выйти из приложения или еще выйти во внешнем провайдере?
+Если пользователь зашел с помощью Google и хочет выйти из приложения `PhotosApp`,
+то скорее всего надо просто выйти из приложения. Но если он нажал выход в приложении `Google Photos`,
+то пожалуй он хочет выйти из своего Google-аккаунта.
+
+Реализуй для Passport подобное поведение: пусть пользователь, вошедший через Passport,
+при выходе из `PhotosApp` также выходит из Passport.
+
+
+Для этого найди `PhotosApp\Areas\Identity\Pages\Account\Logout.cshtml.cs`
+и поменяй содержимое метода `OnPost` на такое:
+```cs
+public async Task<IActionResult> OnPost(string returnUrl = null)
+{
+    await _signInManager.SignOutAsync();
+    _logger.LogInformation("User logged out.");
+    if (User?.FindFirst(ClaimTypes.AuthenticationMethod)?.Value == "Passport")
+    {
+        return SignOut("Passport");
+        // NOTE: это более явный вариант предыдущей строчки
+        //await HttpContext.SignOutAsync("Passport");
+        //return new EmptyResult();
+    }
+    if (returnUrl != null)
+    {
+        return LocalRedirect(returnUrl);
+    }
+    else
+    {
+        return RedirectToPage();
+    }
+}
+```
+
+Теперь можешь убедиться, что при нажатии на кнопку «Logout» происходит выход из приложения,
+а затем выход в `IdentityServer`. При этом пользователь остается на странице `IdentityServer`.
+
+Это как-то неудобно. Правильнее было бы вернуть пользователя на главную страницу `PhotosApp`.
+Так можно сделать, но есть «подводные камни».
+
+Во-первых, в настройках в вызове `AddOpenIdConnect` для Passport надо задать адрес, на который
+надо возвращать пользователя после выхода.
+```cs
+options.SignedOutCallbackPath = "/signout-callback-passport";
+```
+Строго говоря, у `SignedOutCallbackPath` уже было задано значение `/signout-callback-oidc` по-умолчанию.
+Но лучше значением по-умолчанию не пользоваться: если в приложение добавить несколько OIDC,
+то при настройках по-умолчанию непонятно кто будет обрабатывать запрос на выход.
+
+Явного задания `SignedOutCallbackPath` недостаточно. Да, приложение предложит `IdentityServer` сделать редирект
+по этому адресу. Но `IdentityServer` не будет делать редирект непонятно куда.
+
+Поэтому, во-вторых, надо зарегистрировать этот адрес в клиенте `"Photos App by OIDC"` в `Config.cs` в `IdentityServer`:
+```cs
+// NOTE: куда предлагать перейти после логаута
+PostLogoutRedirectUris = { "https://localhost:5001/signout-callback-passport" },
+```
+
+Можешь убедиться, что так тоже работать не будет. Все дело в том, что `IdentityServer` требует предъявить при выходе
+некоторый id token пользователя в качестве «подсказки», т.е. передать в запросе `id_token_hint`.
+
+Обработчик OpenID Connect умеет отправлять `id_token_hint`, если id token доступен в сессии, т.е. в нашем случае лежит
+в куки схемы `Identity.Application`. Проблема в том, что его там пока нет.
+
+Поэтому, в-третьих, надо добавить сохранение токенов в вызов `AddOpenIdConnect` для Passport:
+```cs
+options.SaveTokens = true;
+```
+
+А в-четвертых, надо переносить эти токены из схемы `"Identity.External"` в схему `"Identity.Application"`.
+И это надо делать в двух случаях: и после регистрации нового аккаунта в приложении и в случае входа в существующий аккаунт.
+
+Для случая регистрации в методе `OnPostConfirmationAsync` в `ExternalLogin.cshtml.cs` найди вызов `_signInManager.SignInAsync`
+и замени его на такой код:
+```cs
+// NOTE: сохранение полученных от провайдера токенов
+var props = new AuthenticationProperties();
+props.StoreTokens(info.AuthenticationTokens);
+props.IsPersistent = false;
+await _signInManager.SignInAsync(user, props, info.LoginProvider);
+```
+
+Для случая входа в существующий аккаунт в методе `OnGetCallbackAsync` в `ExternalLogin.cshtml.cs` найди код:
+```cs
+var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor : true);
+if (result.Succeeded)
+{
+    ...
+}
+```
+и внутри этого `if` добавь код:
+```cs
+// NOTE: перелогин с сохранением полученных от провайдера токенов
+var user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+var props = new AuthenticationProperties();
+props.StoreTokens(info.AuthenticationTokens);
+props.IsPersistent = false;
+await _signInManager.SignInAsync(user, props, info.LoginProvider);
+```
+
+*Замечание. В методе `OnGetCallbackAsync` при вызове `_signInManager.ExternalLoginSignInAsync` происходит попытка входа*
+*в аккаунт приложения, соответствующий аккаунту из внешнего провайдера. Если аккаунт не найден, то происходит переход*
+*к регистрации нового аккаунта. А вот если найден, то надо сохранить полученные от внешнего провайдера токены.*
+*Так как у метода `ExternalLoginSignInAsync` нет перегрузки, которая позволяет задать `AuthenticationProperties`,*
+*приходится делать «повторный вход». Для пользователя это незаметно.*
+*Более элегантное, но трудоемкое решение — создать наследника `SignInManager`,*
+*у которого будет нужная перегрузка `ExternalLoginSignInAsync`.*
+
+
+Вот теперь можно убедиться, что выход из приложения работает правильно: происходит редирект
+на страницу выхода в `IdentityServer`, на которой есть ссылка для возврата в приложение `PhotosApp`.
+
+
+Еще один штрих. Вход для внешних провайдеров настроен так, что после закрытия браузера сессия завершается.
+А значит при следующем входе снова придется входить. Может быть это удобно входа через Google.
+Но для Passport это немного странно, ведь интеграция с ним более тесная: теперь даже выход происходит одновременно.
+
+Поэтому найди строчки `props.IsPersistent = false;`, которые ты добавил в методы `OnGetCallbackAsync`
+и `OnPostConfirmationAsync`, и замни их на `props.IsPersistent = info.LoginProvider == "Passport";`
+
+Можешь убедиться, что теперь после закрытия браузера сессия не теряется и заново входить не приходится.
+
+*Замечание. Это в разработке приводит к некоторому эффекту, похожему на баг.*
+*При перезапуске приложения пользователи пересоздаются, а сессия для удаленного пользователя остается в браузере.*
+*В результате при переходе в профиль и других действиях можно увидеть ошибки.*
+*При нормальной работе приложения такого эффекта не будет,*
+*поэтому его можно игнорировать и просто выходить из старой сессии.*
+
+
+### 8.8. Шаг вперед
+
+Работа по подключению OpenID Connect закончена и далее вновь потребуется `PhotosService`.
+Снова подключи `RemotePhotosRepository`:
+```cs
+//services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
+services.AddScoped<IPhotosRepository, RemotePhotosRepository>();
+```
+
+
+Сейчас аутентификацию и авторизацию в приложении `PhotosApp` можно считать законченной:
+- можно войти по логину и паролю, а также с помощью Google и Passport
+- есть хакерский доступ через JwtToken, хотя его уже можно разобрать
+- взаимодействие с `PhotosService` защищено с помощью Client Credentials Flow
+
+На этом можно остановиться.
+Но аутентификацию в приложении можно построить иначе, полностью делегировав ее `IdentityServer`
+и отказавшись от собственной `Identity`. Следующие задания будут посвящены переходу от `Identity` к `IdentityServer`.
+
+
+## 9. Авторизация в другом сервисе с помощью Authorization Code Flow
+
+Client Credentials Flow позволяет защищать сервисы от запросов неизвестных приложений.
+Но если приложение имеет доступ к сервису, то оно получает доступ к данным всех пользователей в этом сервисе.
+Более правильный подход — выдавать access token для конкретного пользователя, чтобы приложение могло
+совершать в сервисе действия только с данными этого конкретного пользователя.
+
+Code Flow и Implicit Flow в OAuth и соответствующие Flow в OpenID Connect позволяют получать такие access token.
+
+Далее надо научиться получать в `PhotosApp` access token для пользователя от `IdentityServer`,
+чтобы затем авторизоваться с этими токенами в `PhotosService`.
+
+
+### 9.1. Авторизация по access token пользователя
+
+Ресурс `photos_service` уже существует в `IdentityServer` и access tokens, выпущенные с таким скоупом будут приниматься
+в `PhotosService`. Это упрощает задачу.
+
+Чтобы `IdentityServer` присылал правильный access token вместе с id token:
+
+1. В `PhotosApp` в конфигурации Passport добавь `"photos_service"` в `options.Scope`
+2. В `IdentityServer` добавь `"photos_service"` в `AllowedScopes` клиента `"Photos App by OIDC"`
+
+Хорошо бы явно спросить хочет ли пользователь давать `PhotosApp` разрешение на доступ к `PhotosService`.
+Поэтому в настройках клиента `"Photos App by OIDC"` замени значение настройки `RequireConsent` на `true`.
+После этого `IdentityServer` начнет показывать страницу со списком запрашиваемых приложением разрешений.
+
+В одном из предыдущих заданий уже было реализовано сохранение токенов, пришедших от внешних провайдеров
+в схему `"Identity.Application"`, поэтому access token также будет сохраняться.
+
+А это значит, что осталось только в `RemotePhotosRepository` передавать access token пользователя вместо access token,
+запрашиваемого по Client Credentials Flow.
+
+Для этого поправь метод `SendAsync` в `RemotePhotosRepository` вот так:
+```cs
+private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
+{
+    var httpContext = httpContextAccessor.HttpContext;
+    
+    // NOTE: По умолчанию используется DefaultAuthenticateScheme, либо DefaultScheme.
+    var accessToken = await httpContext.GetTokenAsync(
+        IdentityConstants.ApplicationScheme,
+        OpenIdConnectParameterNames.AccessToken);
+    if (accessToken == null)
+        return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+
+    var httpClient = new HttpClient();
+    httpClient.SetBearerToken(accessToken);
+    var response = await httpClient.SendAsync(request);
+    return response;
+}
+```
+Чтобы этот метод работал надо с помощью Dependency Injection через конструктор получить `IHttpContextAccessor`
+и сохранить ее в поле httpContextAccessor.
+
+
+После выполнения этих действий убедись, что пользователь `alice` при входе через Passport видит
+страницу со списком разрешений, а после входа может добавлять фотографии.
+А вот фотографии пользователей приложения, например, `vicky@gmail.com`, больше не показываются.
+
+
+### 9.2. Контроль доступа с помощью access token
+
+Сейчас каждый access token, приходящий в `PhotosService` создержит информацию о пользователе,
+в частности, его идентификатор. Этого достаточно, чтобы `PhotosService` мог предоставить пользователю
+доступ к его фотографиям и запретить к ним доступ для всех других пользователей.
+Следовательно, можно отказаться от политики `MustOwnPhoto` в пользу access token.
+
+
+Закомментируй атрибут `[Authorize(Policy = "MustOwnPhoto")]` в `PhotoController`.
+
+А теперь поставь эксперимент:
+
+1. Зайди под `alice` через Passport и загрузи фотографию.
+2. Перейди на страницу с одной фотографией и сохрани URL страницы
+3. Выполни logout и зайди под пользователем `bob`
+4. Используй сохраненный URL, чтобы открыть фотографию. Она снова будет доступна.
+
+А теперь надо настроить использование access token, чтобы вновь фотографии пользователя
+были доступны только самому пользователю.
+
+
+Все, что надо сделать — это получить access token в методах `PhotosApiController` и добавить проверку владельца.
+Например, в методе `GetPhotoContent` проверка могла бы выглядеть примерно так, если предположить,
+что в `accessToken.Subject` находится идентификатор пользователя:
+```cs
+var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
+if (photoEntity == null)
+    return NotFound();
+if (accessToken.Subject != photoEntity.OwnerId)
+    return Forbid();
+```
+
+
+Но как получить токен?
+Есть способ, который уже использовался:
+```cs
+var accessToken = await HttpContext.GetTokenAsync("access_token");
+```
+Рабочий способ. Недостаток только в том, что вернется строка, которую еще надо будет десериализовать.
+Конечно, для десериализации можно будет использовать что-то готовое, ведь раз ASP.NET Core
+как-то достает информацию из токенов, значит есть способ.
+
+Другая идея — `ModelBinder`. Специальный код, который из запроса достанет нужную информацию и положит
+в качестве параметра в метод контроллера. Чтобы получилось как-то так:
+```cs
+GetPhotoContent(Guid id, JwtSecurityToken accessToken)
+```
+
+Причем вообще-то ASP.NET Core действительно десериализовывает access token, чтобы его проверить.
+И после проверки сообщает об этом с помощью события. Как следствие в опциях `AddJwtBearer`
+можно написать код перехвата токена после проверки:
+```cs
+options.Events = new JwtBearerEvents
+{
+    OnTokenValidated = context =>
+    {
+        // NOTE: с полученным токеном можно что-то сделать
+        var accessToken = context.SecurityToken;
+        // NOTE: например, сохранить куда-нибудь в HttpContext, чтобы потом достать в контроллере
+        var httpContext = context.HttpContext;
+        return Task.CompletedTask;
+    }
+};
+```
+
+
+Воспользуйся вторым способом с перехватом и ModelBinder. Для этого:
+
+1. В `Startup.cs` в `PhotosServices` добавь в `AddJwtBearer` такой код:
+```cs
+options.Events = new JwtBearerEvents
+{
+    OnTokenValidated = context =>
+    {
+        JwtSecurityTokenModelBinder.SaveToken(context.HttpContext, context.SecurityToken);
+        return Task.CompletedTask;
+    }
+};
+```
+
+2. Там же, но в методе `ConfigureServices` дополни опции вызова `AddControllers`:
+```cs
+services.AddControllers(options =>
+{
+    options.ReturnHttpNotAcceptable = true;
+    // NOTE: Существенно, что новый провайдер добавляется в начало списка перед провайдером по-умолчанию
+    options.ModelBinderProviders.Insert(0, new JwtSecurityTokenModelBinderProvider());
+})
+```
+
+3. Найди `JwtSecurityTokenModelBinderProvider` и `JwtSecurityTokenModelBinder` и посмотри как они работают.
+
+4. Теперь вот этот код для `GetPhotoContent` действительно будет работать:
+```cs
+[HttpGet("{id}/content")]
+public async Task<IActionResult> GetPhotoContent(Guid id, JwtSecurityToken accessToken)
+{
+    var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
+    if (photoEntity == null)
+        return NotFound();
+    if (accessToken.Subject != photoEntity.OwnerId)
+        return Forbid();
+
+    ...
+}
+```
+Используй его, чтобы защитить `GetPhotoContent`.
+
+
+Теперь защити все оставшиеся методы `PhotosApiController`. Идея простая: если `ownerId` не совпадает
+с `accessToken.Subject`, то надо вернуть `Forbid()`.
+
+*Замечание. `JwtSecurityToken` — это сложный тип, поэтому по-умолчанию ASP.NET Core пытается значение этого типа*
+*получить из body запроса. `JwtSecurityTokenModelBinder` это не проблема, пока не появится другой параметр*
+*со сложным типом, значение которого надо получать из body. Как, например, в методах `AddPhoto` и `UpdatePhoto`.*
+*Поэтому в этих методах придется `accessToken` помечать атрибутом `[FromHeader]`:*
+```cs
+public async Task<IActionResult> AddPhoto(PhotoToAddDto photo, [FromHeader] JwtSecurityToken accessToken)
+```
+
+
+Повтори эксперимент с `alice` и `bob`. Теперь у `bob` не должна открываться фотография `alice`.
+
+
+### 9.3. Перенос пользователей в IdentityServer
+
+После недавних изменений все пользователи `PhotosApp`, не привязанные к `IdentityServer`
+потеряли доступ к своим фотографиям. Это можно было избежать, продолжая использовать для них access token,
+полученный через Client Credentials Flow.
+
+Но по плану в конце концов все пользователи должны оказаться в `IdentityServer`,
+поэтому просто перенеси всех пользователей `PhotosApp` в `IdentityServer`.
+
+
+В файле `IdentityServer/Quckstart/TestUsers.cs` добавь записи о пользователях из `PhotosApp`:
+```cs
+new TestUser{SubjectId = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd", Username = "vicky@gmail.com", Password = "Pass!2",
+    Claims =
+    {
+        new Claim(JwtClaimTypes.Email, "vicky@gmail.com"),
+        new Claim("testing", "beta"),
+    }
+},
+new TestUser{SubjectId = "dcaec9ce-91c9-4105-8d4d-eee3365acd82", Username = "cristina@gmail.com", Password = "Pass!2",
+    Claims =
+    {
+        new Claim(JwtClaimTypes.Email, "cristina@gmail.com"),
+        new Claim("subscription", "paid"),
+    }
+},
+new TestUser{SubjectId = "b9991f69-b4c1-477d-9432-2f7cf6099e02", Username = "dev@gmail.com", Password = "Pass!2",
+    Claims =
+    {
+        new Claim(JwtClaimTypes.Email, "dev@gmail.com"),
+        new Claim("subscription", "paid"),
+        new Claim("role", "Dev")
+    }
+}
+```
+
+А вот в файле `PhotosApp/Data/DataExtensions.cs` в методе `SeedWithSampleUsersAsync` закомментируй добавление
+всех пользователей, чтобы пользователи в `PhotosApp` больше не создавались. Удаление существующих пользователей оставь.
+
+
+Теперь можно зайти под `vicky@gmail.com` через Passport, но ее фотографии все равно не будут доступны. Убедись в этом.
+
+Так происходит потому, что ее фотографии хранятся под идентификатором `"a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd"`,
+а `PhotoController` использует идентификатор пользователя `Identity`, который создается при входе через Passport.
+
+Поэтому надо сделать две вещи:
+
+1. Сохранять идентификатор пользователя из Passport при создании пользователя Identity.
+Для этого в `Areas/Identity/Pages/AccountExternalLogin.cshtml.cs` в методе `OnPostConfirmationAsync`
+добавь добавление еще одного claim:
+```cs
+if (info.Principal.HasClaim(c => c.Type == ClaimTypes.NameIdentifier))
+    await _userManager.AddClaimAsync(user, new Claim("passport_id",
+        info.Principal.FindFirstValue(ClaimTypes.NameIdentifier)));
+```
+
+2. Используй идентификатор пользователя из Passport в `PhotoController` и для этого поменяй метод `GetOwnerId`:
+```cs
+private string GetOwnerId()
+{
+    //return User.FindFirstValue(ClaimTypes.NameIdentifier);
+    return User.FindFirstValue("passport_id");
+}
+```
+
+
+Теперь зайди под `vicky@gmail.com` через Passport и убедись, что ее фотографии показываются.
+
+
+### 9.4. Refresh token
+
+Текущая схема с access-токенами не учитывает одного важного нюанса — обычно access-токен имеет небольшое время жизни.
+А все потому, что access-токены обычно нельзя отозвать: если сервису предъявили подписанный действующий access-токен,
+то у сервиса нет причин отказать в доступе. Даже если пользователь через сервер авторизации уже запретил доступ для
+приложения, которое успело получить access-токен. Раз нельзя отозвать, то пусть хоть действует недолго.
+
+Но из этого следует, что нужно каким-то образом уметь получать новый access-токен, когда старый перестанет действовать.
+И не отвлекать на это каждые 5 минут пользователя, который увлеченно пользует приложением, которому предоставил доступ.
+
+Для получения новых access-токенов есть специальный refresh-токен. Приложение может запросить refresh-токен вместе
+с access-токеном и, если пользователь даст разрешение, то приложение его получит. Используя refresh-токен приложение
+может получить access-токен, когда старый перестанет действовать или даже раньше. Сам же refresh-токен имеет
+продолжительный срок жизни, это могут быть месяцы. Более того, вместе с новым access-токеном обычно приходит
+новый refresh-токен, поэтому refresh-токен в приложении можно постоянно обновлять,
+а значит он будет всегда действителен. Но зато refresh-токен можно отозвать: если пользователь сообщит
+серверу авторизации, что больше не хочет предоставлять доступ приложению, то сервер авторизации больше не будет
+выдавать по refresh-токенам приложения новые access-токены.
+
+
+Для начала усугуби проблему. Сделай так, что access-токены от `IdentityServer` были действительны только полминуты.
+Для этого в `Config.cs` в настройках клиента `"Photos App by OIDC"` добавь такую опцию:
+```cs
+AccessTokenLifetime = 30
+```
+
+При проверки времени действия токена есть допустимая погрешность. Она теперь будет мешать, поэтому выстави ее в 0.
+Для этого в `PhotosService` в `Startup.cs` в опциях `AddJwtBearer` пропиши:
+```cs
+options.TokenValidationParameters.ClockSkew = TimeSpan.Zero;
+```
+
+
+Теперь войди под пользователем `vicky@gmail.com` через Passport. На главной странице должны подгрузиться фотографии.
+Подожди полминуты и обнови главную страницу. Фотографии должны пропасть, т.к. access token перестал действовать.
+
+
+Проблема очевидна. И пришло время ее решить.
+
+Для этого надо, чтобы приложение запрашивало refresh-токен, а сервер авторизации его предоставлял.
+
+1. Добавь в настройках Passport в `PhotosApp` такую опцию:
+```cs
+options.Scope.Add("offline_access");
+```
+
+2. Добавь в настройках клиента `"Photos App by OIDC"` в `IdentityServer` такую опцию:
+```cs
+AllowOfflineAccess = true
+```
+
+После этих действий refresh-токен будет получаться вместе с access-токеном, а в нашем случае благодаря правкам
+в `ExternalLogin.cshtml.cs` и сохраняться в куки схемы `"Identity.Application"`.
+
+
+Осталось научиться получать access-токены с помощью refresh-токенов. Пусть стратегия будет «наивной»:
+если на запрос из `RemotePhotosRepository` приходит ответ `401 Unauthorized`, то наверное access token
+больше не действует и надо запросить новый, а затем повторить запрос. Если повторный запрос провалился,
+то снова делать ничего не надо.
+
+В соответствие с этой логикой метод `SendAsync` в `RemotePhotosRepository` может быть таким:
+```cs
+private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
+{
+    var httpContext = httpContextAccessor.HttpContext;
+    
+    // NOTE: По умолчанию используется DefaultAuthenticateScheme, либо DefaultScheme.
+    var accessToken = await httpContext.GetTokenAsync(
+        IdentityConstants.ApplicationScheme,
+        OpenIdConnectParameterNames.AccessToken);
+    if (accessToken == null)
+        return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+
+    var httpClient = new HttpClient();
+    httpClient.SetBearerToken(accessToken);
+    var response = await httpClient.SendAsync(request);
+    if (response.StatusCode != HttpStatusCode.Unauthorized)
+        return response;
+
+    var refreshToken = await httpContext.GetTokenAsync(
+        IdentityConstants.ApplicationScheme,
+        OpenIdConnectParameterNames.RefreshToken);
+    if (refreshToken == null)
+        return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+
+    // NOTE: запрос нового access token
+    var newAccessToken = await RefreshAccessTokenAsync(refreshToken);
+    if (newAccessToken != null)
+    {
+        // NOTE: повторный запрос
+        var newHttpClient = new HttpClient();
+        newHttpClient.SetBearerToken(newAccessToken);
+        // NOTE: HttpRequestMessage нельзя использовать два раза, поэтому он копируется
+        var secondRequest = await request.CopyAsync();
+        var secondResponse = await newHttpClient.SendAsync(secondRequest);
+        return secondResponse;
+    }
+
+    return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+}
+
+private async Task<string> RefreshAccessTokenAsync(string refreshToken)
+{
+    throw new NotImplementedException();
+}
+```
+
+Но как реализовать `RefreshAccessTokenAsync`?
+Для получения access token нужно сделать запрос к token endpoint `IdentityServer`.
+Это означает, что надо получить информацию о `IdentityServer`. Ту самую, которую ты раньше уже получал
+вручную по адресу https://localhost:7001/.well-known/openid-configuration.
+
+Для этого можно NuGet-пакет `IdentityModel`: там есть специальный класс `DiscoveryCache`,
+который умеет не только получать настройки, но и кэшировать их, чтобы не запрашивать их при каждом запросе.
+
+Но есть еще один вариант: получать конфигурацию также, как это происходит при подключении аутентификации
+через `AddOpenIdConnect`. Понятно же, что раз приложение уже получает какие-то токены от `IdentityServer`,
+то оно умеет и его конфигурацию получать. Отвечает за получение и кэширование конфигурации
+тип `IConfigurationManager<OpenIdConnectConfiguration>`.
+
+Его экземпляр создается глубоко внутри `AddOpenIdConnect`, но можно создать свой экземпляр
+и передать внутрь `AddOpenIdConnect` — тогда внутри `IConfigurationManager` создаваться не будет.
+А значит кэш с настройками будет существовать в единственном экземпляре.
+
+Создай и зарегистрируй в `services` свой `configurationManager` в файле `IdentityHostingStartup.cs` вот так:
+```cs
+const string oidcAuthority = "https://localhost:7001";
+var oidcConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+    $"{oidcAuthority}/.well-known/openid-configuration",
+    new OpenIdConnectConfigurationRetriever(),
+    new HttpDocumentRetriever());
+
+services.AddSingleton<IConfigurationManager<OpenIdConnectConfiguration>>(oidcConfigurationManager);
+```
+
+А в вызов `AddOpenIdConnect` добавь в опции:
+```cs
+options.ConfigurationManager = oidcConfigurationManager;
+```
+
+Теперь можно получить `IConfigurationManager<OpenIdConnectConfiguration> oidcConfigurationManager`
+через конструктор `RemotePhotosRepository` и сохранить в поле для использования в методах.
+
+Наконец, можно написать реализацию `RefreshAccessTokenAsync`, которая будет использовать
+`IConfigurationManager` для получения настроек и NuGet-пакет `IdentityModel`,
+чтобы сформировать верный запрос к token endpoint.
+```cs
+private async Task<string> RefreshAccessTokenAsync(string refreshToken)
+{
+    var httpContext = httpContextAccessor.HttpContext;
+
+    // NOTE: получение конфигурации сервера авторизации
+    // NOTE: если исходный запрос будет отменен, то использование RequestAborted отменит запрос конфигурации
+    var oidcConfiguration = await oidcConfigurationManager.GetConfigurationAsync(httpContext.RequestAborted);
+
+    // NOTE: запрос токенов с помощью IdentityModel
+    var tokenResponse = await new HttpClient().RequestRefreshTokenAsync(new RefreshTokenRequest
+    {
+        Address = oidcConfiguration.TokenEndpoint,
+        ClientId = "Photos App by OIDC",
+        ClientSecret = "secret",
+        RefreshToken = refreshToken,
+    });
+
+    // NOTE: обновление access token и refresh token в аутентификационной cookie
+    var authResult = await httpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
+    if (tokenResponse.RefreshToken != null)
+        authResult.Properties.UpdateTokenValue(OpenIdConnectParameterNames.RefreshToken, tokenResponse.RefreshToken);
+    if (tokenResponse.AccessToken != null)
+        authResult.Properties.UpdateTokenValue(OpenIdConnectParameterNames.AccessToken, tokenResponse.AccessToken);
+    await httpContext.SignInAsync(IdentityConstants.ApplicationScheme, authResult.Principal, authResult.Properties);
+
+    return tokenResponse.AccessToken;
+}
+```
+
+
+Теперь можно повторить эксперимент. Войди под пользователем `vicky@gmail.com` через Passport.
+На главной странице должны подгрузиться фотографии. Подожди полминуты и обнови главную страницу.
+Фотографии должны остаться.
+
+
+### 9.5. Валидация токенов
+
+Вообще-то можно не отправлять заведомо старые access-токены в `PhotosService`.
+Можно проверять access-токен перед запросом и, если он старый, то сразу запрашивать новый.
+
+
+Свою реализацию проверки токена писать, конечно, не нужно, ведь в .NET уже есть готовая.
+
+Добавь в `RemotePhotosRepository` такой метод проверки:
+```cs
+private async Task<TokenValidationResult> ValidateTokenAsync(string accessToken)
+{
+    var validationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero,
+        // NOTE: Небольшая хитрость, чтобы подпись не проверялась,
+        // ведь ее не получится проверить без закрытого ключа
+        SignatureValidator = (token, validationParameters) => new JsonWebToken(token)
+    };
+
+    var tokenHandler = new JsonWebTokenHandler();
+    var validationResult = tokenHandler.ValidateToken(accessToken, validationParameters);
+    return validationResult;
+}
+```
+В нем `TokenValidationParameters` настраиваются таким образом, чтобы проверялось только время жизни токена.
+
+Теперь перепиши `SendAsync` так, чтобы перед первым запросом к `PhotosService` проверялся токен и сам запрос
+происходил только в том случае, когда `validationResult.IsValid`. А иначе сразу доставался refresh token,
+запрашивался новый access token и запрос к `PhotosService` происходил уже с новым access token.
+
+
+Раз уж возник вопрос валидации токенов, то исключительно ради эксперимента, добавь проверку
+подписи токена в `ValidateTokenAsync`. Это на самом деле не требуется, т.к. подпись id token проверяется
+при аутентификации, а подпись access token будет в любом случае проверяться `PhotosService`.
+Но уметь проверять в коде токен полезно. Тем более, что уже вручную проверять умеешь.
+
+Итак, для начала придется получить конфигурацию сервера авторизации и JWK из нее:
+```cs
+var httpContext = httpContextAccessor.HttpContext;
+var oidcConfiguration = await oidcConfigurationManager.GetConfigurationAsync(httpContext.RequestAborted);
+var issuerSigningKeys = oidcConfiguration.SigningKeys;
+```
+
+А затем подправить `TokenValidationParameters` перед проверкой вот так:
+```cs
+// NOTE: если все же хочется проверить подпись, то хитрость не нужна
+validationParameters.SignatureValidator = null;
+validationParameters.IssuerSigningKeys = issuerSigningKeys;
+// NOTE: токены совсем без подписи вообще-то надо всегда отбрасывать — они ничтожны
+validationParameters.RequireSignedTokens = true;
+```
+
+
+### 9.6. Сохранение токенов
+
+Сейчас все токены, полученные приложением хранятся в http-only cookie.
+Это достаточно безопасно: современные браузеры гарантируют, что скрипты, в том числе скрипты злоумышленников,
+не смогут получить доступ к таким cookie, а https может гарантировать, что cookie не будут перехвачены при передаче.
+
+Но можно токены вообще не передавать в браузер. Например, за счет использования `TicketStore` и сессий.
+А еще их можно сохранить в базу данных для пользователя и доставать, когда потребуется.
+
+Сохранять токены в базу данных может потребоваться не только из соображений безопасности,
+но и для того, чтобы выполнять некоторые действия от имени пользователя, когда тот находится «offline»:
+достаточно просто достать refresh token из БД, получить access token — и можно делать все, что разрешил пользователь.
+
+
+Короче, полезное это дело уметь сохранять токены в базу данных. И это несложно сделать.
+Просто добавь в вызов вызова `AddOpenIdConnect` в опции обработку события получения токенов:
+```cs
+options.Events = new OpenIdConnectEvents()
+{
+    OnTokenResponseReceived = context =>
+    {
+        var tokenResponse = context.TokenEndpointResponse;
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        if (tokenResponse.AccessToken != null)
+        {
+            var accessToken = tokenHandler.ReadToken(tokenResponse.AccessToken);
+        }
+        if (tokenResponse.IdToken != null)
+        {
+            var idToken = tokenHandler.ReadToken(tokenResponse.IdToken);
+        }
+        if (tokenResponse.RefreshToken != null)
+        {
+            // NOTE: Это не JWT-токен
+            var refreshToken = tokenResponse.RefreshToken;
+        }
+
+        return Task.CompletedTask;
+    }
+};
+```
+Добавь и с помощью отладки проверь, что токены действительно приходят.
+
+
+## 10. Аутентификация только через IdentityServer
+
+Пришло время окончательно отказаться от `Identity` в `PhotosApp` в пользу `IndetityServer`.
+Заодно и от других способов аутентификации. Пусть все сложности аутентификации будут собраны в одном месте!
+`IdentityServer` — это прекрасное решение для компаний, у которых много веб-приложений, потому что не нужно
+в каждом реализовывать логику аутентификации и управления пользователями! Да и пользователи в одном месте!
+
+
+Прежде всего придется закомментировать много кода!
+
+
+В `IdentityHostingStartup.cs` закомментируй почти все. Проще перечислить то, что должно остаться:
+
+- Создание `oidcConfigurationManager`
+
+- Подключение Passport:
+```cs
+services.AddAuthentication()
+    .AddOpenIdConnect("Passport", "Паспорт", options =>
+    {
+        ...
+    }
+```
+
+- Политики авторизации `services.AddAuthorization`, но закомментируй политику `MustOwnPhoto`
+и исправь политику по-умолчанию вот так:
+```cs
+options.DefaultPolicy = new AuthorizationPolicyBuilder()
+    .RequireAuthenticatedUser()
+    .Build();
+```
+
+
+В `RemotePhotosRepository.cs` убери имя схемы в вызовах `GetTokenAsync`: в них будет использоваться схема по-умолчанию,
+которая будет создана позже.
+
+
+В `PhotoController.cs` в методе `GetOwnerId` верни использование `ClaimTypes.NameIdentifier`, ведь теперь будут
+использоваться только идентификаторы пользователей из `IdentityServer`.
+
+
+В `DataExtensions.cs` закомментируй все в методе `PrepareDB`, потому что пользователи хранятся в `IdentityServer`,
+а фотографии в `PhotosService`.
+
+
+В `Startup.cs` закомментируй вызов `endpoints.MapRazorPages();`, потому что они использовались только для `Identity`.
+
+
+Разборка на этом закончена. Теперь надо собрать новую аутентификацию.
+
+
+Прежде всего надо создать cookie-схему, в которую внешние провайдеры, а именно OpenID Connect,
+смогут сохранять свою информацию. Поэтому добавь в `IdentityHostingStartup.cs`:
+```cs
+services.AddAuthentication(options =>
+    {
+        // NOTE: Схема, которую внешние провайдеры будут использовать для сохранения данных о пользователе
+        // NOTE: Так как значение совпадает с DefaultScheme, то эту настройку можно не задавать
+        options.DefaultSignInScheme = "Cookie";
+        // NOTE: Схема, которая будет вызываться, если у пользователя нет доступа
+        options.DefaultChallengeScheme = "Passport";
+        // NOTE: Схема на все остальные случаи жизни
+        options.DefaultScheme = "Cookie";
+    })
+    .AddCookie("Cookie", options =>
+    {
+        // NOTE: Пусть у куки будет имя, которое расшифровывается на странице «Decode»
+        options.Cookie.Name = "PhotosApp.Auth";
+    });
+```
+
+
+Затем создай вот такой контроллер, чтобы инициировать вход пользователя и обработать выход пользователя:
+```cs
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace PhotosApp.Controllers
+{
+    public class PassportController : Controller
+    {
+        // NOTE: Неаутентифицированный пользователь будет отправляться на вход в DefaultChallengeScheme,
+        // а затем возвращаться сюда и отсюда перенаправляться на главную страницу.
+        [Authorize]
+        public IActionResult Login()
+        {
+            return Redirect("/");
+        }
+
+        // NOTE: Сначала происходит выход из приложения, а затем на сервере авторизации
+        [Authorize]
+        public IActionResult Logout()
+        {
+            return SignOut("Cookie", "Passport");
+        }
+    }
+}
+```
+
+Можешь заменить реализацию метода Login на более явную:
+```cs
+// [Authorize]
+public IActionResult Login()
+{
+    if (!User.Identity.IsAuthenticated)
+        return Challenge();
+
+    return Redirect("/");
+}
+```
+
+
+Наконец, создай ссылки для входа. Для этого замени содержимое `Views/Shared/_LoginPartial.cshtml` на такое:
+```cshtml
+<ul class="navbar-nav">
+    @if (User.Identity.IsAuthenticated)
+    {
+        <li class="nav-item">
+            <form id="logoutForm" class="form-inline" asp-controller="Passport" asp-action="Logout">
+                <button id="logout" type="submit" class="nav-link btn btn-link text-dark">Logout</button>
+            </form>
+        </li>
+    }
+    else
+    {
+        <li class="nav-item">
+            <a class="nav-link text-dark" id="login" asp-controller="Passport" asp-action="Login">Login</a>
+        </li>
+    }
+</ul>
+```
+
+А в `Views/Photo/Index.cshtml` замени
+```cshtml
+<a asp-area="Identity" asp-page="/Account/Login">
+```
+на
+```cshtml
+<a asp-controller="Passport" asp-action="Login">
+```
+
+
+Теперь можно убедиться, что аутентификация через `IdentityServer` прекрасно работает!
+И вход, и выход. И для `vicky@gmail.com`, и для `alice`.
