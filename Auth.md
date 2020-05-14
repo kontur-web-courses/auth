@@ -1106,12 +1106,7 @@ services.AddScoped<IPhotosRepository, RemotePhotosRepository>();
 
 Для начала добавь аутентификацию по токену в `PhotosService`.
 
-1. Выполни в папке с solution:
-```
-dotnet add PhotosService package Microsoft.AspNetCore.Authentication.JwtBearer
-```
-
-2. Добавь в метод `ConfigureServices` в `Startup.cs` в проекте `PhotosService` следующий код:
+1. Добавь в метод `ConfigureServices` в `Startup.cs` в проекте `PhotosService` следующий код:
 ```
 services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
@@ -1124,11 +1119,13 @@ services.AddAuthentication("Bearer")
 сервером авторизации https://localhost:7001. А еще в этих токенах должно быть указано, что они дают доступ
 к ресурсу `"photos_service"`. `PhotosService` как раз и будет этим «ресурсом».
 
-3. Добавь middleware для аутентификации и авторизации между `UseRouting` и `UseEndpoints`:
+2. Добавь middleware для аутентификации и авторизации между `UseRouting` и `UseEndpoints`:
 ```cs
 app.UseAuthentication();
 app.UseAuthorization();
 ```
+
+3. Добавь атрибут `[Authorize]` контроллеру `PhotosApiController`.
 
 Теперь запусти `PhotosApp` и `PhotosService`, зайди в приложение под `vicky@gmail.com` и убедись,
 что фотографии не загружаются, а вместо них надпись «Ничего не найдено».
