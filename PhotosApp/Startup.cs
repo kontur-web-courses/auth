@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 using PhotosApp.Clients;
 using PhotosApp.Clients.Models;
 using PhotosApp.Data;
@@ -104,6 +106,32 @@ namespace PhotosApp
 
                     options.Events = new OpenIdConnectEvents
                     {
+                        OnTokenResponseReceived = context =>
+                        {
+                            var tokenResponse = context.TokenEndpointResponse;
+                            var tokenHandler = new JwtSecurityTokenHandler();
+
+                            SecurityToken accessToken = null;
+                            if (tokenResponse.AccessToken != null)
+                            {
+                                accessToken = tokenHandler.ReadToken(tokenResponse.AccessToken);
+                            }
+
+                            SecurityToken idToken = null;
+                            if (tokenResponse.IdToken != null)
+                            {
+                                idToken = tokenHandler.ReadToken(tokenResponse.IdToken);
+                            }
+
+                            string refreshToken = null;
+                            if (tokenResponse.RefreshToken != null)
+                            {
+                                // NOTE: Это не JWT-токен
+                                refreshToken = tokenResponse.RefreshToken;
+                            }
+
+                            return Task.CompletedTask;
+                        },
                         OnRemoteFailure = context => 
                         {
                             context.Response.Redirect("/");
