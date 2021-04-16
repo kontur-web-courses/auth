@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -30,9 +32,12 @@
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="Photos" asp-action="Index">Все фото</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Photos" asp-action="AddPhoto">Добавить фото</a>
-                        </li>
+                        @if ((await AuthorizationService.AuthorizeAsync(User, "CanAddPhoto")).Succeeded)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Photos" asp-action="AddPhoto">Добавить фото</a>
+                            </li>
+                        }
                         @if (User.IsInRole("Dev"))
                         {
                             <li class="nav-item">
