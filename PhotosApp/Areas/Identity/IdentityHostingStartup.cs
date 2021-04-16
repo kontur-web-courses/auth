@@ -1,4 +1,5 @@
 using System;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Services;
+using PhotosApp.Services.TicketStores;
 
 [assembly: HostingStartup(typeof(PhotosApp.Areas.Identity.IdentityHostingStartup))]
 namespace PhotosApp.Areas.Identity
@@ -19,11 +21,28 @@ namespace PhotosApp.Areas.Identity
                 services.AddDbContext<UsersDbContext>(options =>
                     options.UseSqlite(
                         context.Configuration.GetConnectionString("UsersDbContextConnection")));
+                services.AddDbContext<TicketsDbContext>(options =>
+                    options.UseSqlite(
+                        context.Configuration.GetConnectionString("TicketsDbContextConnection")));
 
                 services.AddDefaultIdentity<PhotosAppUser>()
                     .AddEntityFrameworkStores<UsersDbContext>()
                     .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>()
                     .AddErrorDescriber<RussianIdentityErrorDescriber>();
+
+                services.AddTransient<EntityTicketStore>();
+                services.ConfigureApplicationCookie(options =>
+                {
+                    var serviceProvider = services.BuildServiceProvider();
+                    options.SessionStore = serviceProvider.GetRequiredService<EntityTicketStore>();
+                    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+                    options.Cookie.Name = "PhotosApp.Auth";
+                    options.Cookie.HttpOnly = true;
+                    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+                    options.LoginPath = "/Identity/Account/Login";
+                    options.ReturnUrlParameter = CookieAuthenticationDefaults.ReturnUrlParameter;
+                    options.SlidingExpiration = true;
+                });
 
                 services.Configure<IdentityOptions>(options =>
                 {
