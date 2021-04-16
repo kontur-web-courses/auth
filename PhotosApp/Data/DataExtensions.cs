@@ -13,7 +13,7 @@ namespace PhotosApp.Data
 {
     public static class DataExtensions
     {
-        public static void PrepareDB(this IHost host)
+        public static void PrepareData(this IHost host)
         {
             using (var scope = host.Services.CreateScope())
             {
@@ -195,8 +195,14 @@ namespace PhotosApp.Data
 
         private static async Task SeedWithSampleRolesAsync(this RoleManager<IdentityRole> roleManager)
         {
-            var role = new IdentityRole { Name = "Dev" };
-            await roleManager.CreateAsync(role);
+            // NOTE: ToList важен, так как при удалении роли меняется список ролей
+            foreach (var role in roleManager.Roles.ToList())
+                await roleManager.DeleteAsync(role);
+
+            {
+                var role = new IdentityRole { Name = "Dev" };
+                await roleManager.CreateAsync(role);
+            }
         }
     }
 }

@@ -87,6 +87,7 @@ namespace PhotosApp.Controllers
             return RedirectToAction("Index");
         }
 
+        [HttpPost]
         public async Task<IActionResult> DeletePhoto(Guid id)
         {
             var photoEntity = await photosRepository.GetPhotoMetaAsync(id);

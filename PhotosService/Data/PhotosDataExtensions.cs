@@ -10,7 +10,7 @@ namespace PhotosService.Data
 {
     public static class PhotosDataExtensions
     {
-        public static void PrepareDB(this IHost host)
+        public static void PrepareData(this IHost host)
         {
             using (var scope = host.Services.CreateScope())
             {

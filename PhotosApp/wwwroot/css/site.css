@@ -7,8 +7,6 @@ a.navbar-brand {
   word-break: break-all;
 }
 
-/* Sticky footer styles
--------------------------------------------------- */
 html {
   font-size: 16px;
 }
@@ -34,20 +32,19 @@ button.accept-policy {
   line-height: inherit;
 }
 
-/* Sticky footer styles
--------------------------------------------------- */
 html {
   position: relative;
   min-height: 100%;
 }
 
-body {
-  /* Margin bottom by footer height */
-  margin-bottom: 60px;
+.container-footer {
+  clear: both;
+  height: 60px;
 }
+
 .footer {
   position: absolute;
-  bottom: 0;
+  bottom: 1px;
   width: 100%;
   white-space: nowrap;
   /* Set the fixed height of the footer here */
@@ -94,4 +91,28 @@ textarea {
 
 .validation {
     color: darkred;
+}
+
+.inline-block {
+    display: inline-block;
+}
+
+.link-button {
+    border-width: 0px;
+    border-color: transparent;
+    padding: 0px;
+    background-color: transparent;
+    cursor: pointer;
+    text-decoration: none;
+    color: #007bff;
+}
+
+.link-button:focus {
+  outline: none;
+}
+
+.link-button:hover {
+  border: 0px;
+  color: #0056B3;
+  text-decoration: underline;
 }

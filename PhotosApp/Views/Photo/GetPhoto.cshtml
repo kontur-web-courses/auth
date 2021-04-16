@@ -12,7 +12,10 @@
         <div class="bottomMargin">
             <a asp-controller="Photo" asp-action="EditPhoto" asp-route-id="@Model.Photo.Id">Изменить подпись</a>
             <text>&nbsp;</text>
-            <a asp-controller="Photo" asp-action="DeletePhoto" asp-route-id="@Model.Photo.Id">Удалить фото</a>
+            <form class="inline-block" onsubmit="return confirm('Удалить фото?')"
+                asp-controller="Photo" asp-action="DeletePhoto" asp-route-id="@Model.Photo.Id">
+                <button type="submit" class="link-button">Удалить фото</button>
+            </form>
         </div>
     </div>
 </div>
