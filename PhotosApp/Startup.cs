@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -77,6 +77,7 @@ namespace PhotosApp
 
                     // NOTE: oidc и profile уже добавлены по умолчанию
                     options.Scope.Add("email");
+                    options.Scope.Add("photos_app");
 
                     options.CallbackPath = "/signin-passport";
                     options.SignedOutCallbackPath = "/signout-callback-passport";
