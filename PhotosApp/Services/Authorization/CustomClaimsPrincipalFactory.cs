@@ -20,10 +20,11 @@ namespace PhotosApp.Services.Authorization
             var principal = await base.CreateAsync(user);
             var claimsIdentity = (ClaimsIdentity)principal.Identity;
 
-            claimsIdentity.AddClaims(new[]
-            {
-                new Claim("type", "value")
-            });
+            // NOTE: Вот так можно добавить claim
+            // claimsIdentity.AddClaims(new[]
+            // {
+            //     new Claim("type", "value")
+            // });
 
             throw new NotImplementedException();
 

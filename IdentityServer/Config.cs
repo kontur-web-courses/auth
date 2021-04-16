@@ -19,6 +19,15 @@ namespace IdentityServer
             new ApiResource[] 
             {
                 new ApiResource("api1", "My API")
+                {
+                    Scopes = { "scope1" }
+                }
+            };
+
+        public static IEnumerable<ApiScope> ApiScopes =>
+            new ApiScope[]
+            {
+                new ApiScope("scope1", "My scope")
             };
         
         public static IEnumerable<Client> Clients =>
@@ -38,7 +47,7 @@ namespace IdentityServer
                     },
 
                     // scopes that client has access to
-                    AllowedScopes = { "api1" }
+                    AllowedScopes = { "scope1" }
                 }
             };
     }

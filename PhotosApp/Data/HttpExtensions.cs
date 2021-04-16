@@ -16,8 +16,8 @@ namespace PhotosApp.Data
             foreach (var header in request.Headers)
                 clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
 
-            foreach (var property in request.Properties)
-                clone.Properties.Add(property);
+            foreach (var option in request.Options)
+                clone.Options.Set(new HttpRequestOptionsKey<object>(option.Key), option.Value);
 
             var memoryStream = new MemoryStream();
             if (request.Content != null)

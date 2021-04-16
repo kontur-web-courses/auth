@@ -10,48 +10,68 @@ namespace PhotosApp.Services
     public class SimplePasswordHasher<TUser> : IPasswordHasher<TUser>
         where TUser : IdentityUser
     {
-        private const int SaltSize = 128;
-        private const int SubkeySize = 256;
+        private const int SaltSizeInBits = 128;
+        private const int HashSizeInBits = 256;
 
         public string HashPassword(TUser user, string password)
         {
-            byte[] saltBytes = new byte[SaltSize / 8];
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(saltBytes);
-            }
-
-            byte[] subkeyBytes = GetSubkeyBytes(password, saltBytes);
-
-            var hashedPasswordBytes = new byte[saltBytes.Length + subkeyBytes.Length];
-            Buffer.BlockCopy(saltBytes, 0,
-                hashedPasswordBytes, 0, saltBytes.Length);
-            Buffer.BlockCopy(subkeyBytes, 0,
-                hashedPasswordBytes, saltBytes.Length, subkeyBytes.Length);
-            return Convert.ToBase64String(hashedPasswordBytes);
+            byte[] saltBytes = GenerateSaltBytes();
+            byte[] hashBytes = GetHashBytes(password, saltBytes);
+            byte[] hashedPasswordBytes = ConcatenateBytes(saltBytes, hashBytes);
+            string hashedPassword = Convert.ToBase64String(hashedPasswordBytes);
+            return hashedPassword;
         }
 
         public PasswordVerificationResult VerifyHashedPassword(TUser user,
             string hashedPassword, string providedPassword)
         {
-            byte[] expectedSubkeyBytes = null;
-            byte[] actualSubkeyBytes = null;
+            byte[] expectedHashBytes = null;
+            byte[] actualHashBytes = null;
 
             throw new NotImplementedException();
 
-            return AreByteArraysEqual(actualSubkeyBytes, expectedSubkeyBytes)
+            // Если providedPassword корректен, то в результате хэширования его с той же самой солью,
+            // что и оригинальный пароль, должен получаться тот же самый хэш.
+            return AreByteArraysEqual(actualHashBytes, expectedHashBytes)
                 ? PasswordVerificationResult.Success
                 : PasswordVerificationResult.Failed;
         }
 
-        private static byte[] GetSubkeyBytes(string password, byte[] saltBytes)
+        private byte[] GenerateSaltBytes()
+        {
+            byte[] saltBytes = new byte[SaltSizeInBits / 8];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(saltBytes);
+            }
+            return saltBytes;
+        }
+
+        private static byte[] GetHashBytes(string password, byte[] saltBytes)
         {
             return KeyDerivation.Pbkdf2(
                 password: password,
                 salt: saltBytes,
                 prf: KeyDerivationPrf.HMACSHA1,
                 iterationCount: 10000,
-                numBytesRequested: SubkeySize / 8);
+                numBytesRequested: HashSizeInBits / 8);
+        }
+
+        private static byte[] ConcatenateBytes(byte[] leftBytes, byte[] rightBytes)
+        {
+            var resultBytes = new byte[leftBytes.Length + rightBytes.Length];
+            
+            Buffer.BlockCopy(
+                leftBytes, 0, // байты источника и позиция в них
+                resultBytes, 0, // байты назначения и начальная позиция в них
+                leftBytes.Length); // количество байтов, которое надо скопировать
+
+            Buffer.BlockCopy(
+                rightBytes, 0, // байты источника и позиция в них
+                resultBytes, leftBytes.Length, // байты назначения и начальная позиция в них
+                rightBytes.Length); // количество байтов, которое надо скопировать
+            
+            return resultBytes;
         }
 
         private static bool AreByteArraysEqual(byte[] a, byte[] b)

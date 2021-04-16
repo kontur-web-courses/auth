@@ -2,9 +2,15 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build",
-            "dependsOn": ["build PhotosApp", "build PhotosService", "build IdentityServer"],
+            "label": "build Solution",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/auth.sln"
+            ],
             "problemMatcher": "$msCompile",
+            "group": "build"
         },
         {
             "label": "build PhotosApp",
