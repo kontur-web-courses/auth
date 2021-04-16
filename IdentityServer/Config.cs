@@ -60,6 +60,9 @@ namespace IdentityServer
                     // NOTE: куда отправлять после логина
                     RedirectUris = { "https://localhost:5001/signin-passport" },
 
+                    // NOTE: куда предлагать перейти после логаута
+                    PostLogoutRedirectUris = { "https://localhost:5001/signout-callback-passport" },
+
                     AllowedScopes = new List<string>
                     {
                         // NOTE: Позволяет запрашивать id token

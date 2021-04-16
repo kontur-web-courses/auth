@@ -77,12 +77,15 @@ namespace PhotosApp
                     options.Scope.Add("email");
 
                     options.CallbackPath = "/signin-passport";
+                    options.SignedOutCallbackPath = "/signout-callback-passport";
 
                     // NOTE: все эти проверки токена выполняются по умолчанию, указаны для ознакомления
                     options.TokenValidationParameters.ValidateIssuer = true; // проверка издателя
                     options.TokenValidationParameters.ValidateAudience = true; // проверка получателя
                     options.TokenValidationParameters.ValidateLifetime = true; // проверка не протух ли
                     options.TokenValidationParameters.RequireSignedTokens = true; // есть ли валидная подпись издателя
+
+                    options.SaveTokens = true;
                 });
 
             services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
