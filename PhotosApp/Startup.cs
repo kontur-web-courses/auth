@@ -1,5 +1,7 @@
-﻿using AutoMapper;
+using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -86,6 +88,16 @@ namespace PhotosApp
                     options.TokenValidationParameters.RequireSignedTokens = true; // есть ли валидная подпись издателя
 
                     options.SaveTokens = true;
+
+                    options.Events = new OpenIdConnectEvents
+                    {
+                        OnRemoteFailure = context => 
+                        {
+                            context.Response.Redirect("/");
+                            context.HandleResponse();
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
 
             services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
