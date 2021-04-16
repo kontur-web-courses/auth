@@ -23,6 +23,7 @@ else
             asp-action="Login"
             asp-route-returnUrl="@Context.Request.GetEncodedPathAndQuery()">
             <button id="login" type="submit" class="nav-link btn btn-link text-dark">Login</button>
+            <input id="rememberMe" name="rememberMe" type="hidden" value="true" />
         </form>
     </li>
 }
