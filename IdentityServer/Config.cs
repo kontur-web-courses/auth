@@ -59,7 +59,7 @@ namespace IdentityServer
                     AllowedGrantTypes = GrantTypes.Code,
                     
                     // NOTE: показывать ли пользователю страницу consent со списком запрошенных разрешений
-                    RequireConsent = false,
+                    RequireConsent = true,
 
                     // NOTE: куда отправлять после логина
                     RedirectUris = { "https://localhost:5001/signin-passport" },
@@ -75,7 +75,8 @@ namespace IdentityServer
                         IdentityServerConstants.StandardScopes.Profile,
                         // NOTE: Позволяет запрашивать email пользователя через id token
                         IdentityServerConstants.StandardScopes.Email,
-                        "photos_app"
+                        "photos_app",
+                        "photos"
                     },
 
                     // NOTE: Надо ли добавлять информацию о пользователе в id token при запросе одновременно
