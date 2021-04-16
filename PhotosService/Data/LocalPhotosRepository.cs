@@ -16,6 +16,13 @@ namespace PhotosService.Data
             this.dbContext = dbContext;
         }
 
+        public async Task<IEnumerable<PhotoEntity>> GetPhotosAsync(string ownerId)
+        {
+            return await dbContext.Photos
+                .Where(i => i.OwnerId == ownerId)
+                .OrderBy(i => i.Title).ToListAsync();
+        }
+
         public async Task<PhotoEntity> GetPhotoMetaAsync(Guid id)
         {
             return await dbContext.Photos.FirstOrDefaultAsync(p => p.Id == id);
@@ -39,13 +46,6 @@ namespace PhotosService.Data
                 ContentType = contentType,
                 Content = content
             };
-        }
-
-        public async Task<IEnumerable<PhotoEntity>> GetPhotosAsync(string ownerId)
-        {
-            return await dbContext.Photos
-                .Where(i => i.OwnerId == ownerId)
-                .OrderBy(i => i.Title).ToListAsync();
         }
 
         public async Task<bool> AddPhotoAsync(string title, string ownerId, byte[] content)

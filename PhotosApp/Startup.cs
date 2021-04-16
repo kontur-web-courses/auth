@@ -79,7 +79,7 @@ namespace PhotosApp
             app.UseRouting();
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllerRoute("default", "{controller=Photo}/{action=Index}/{id?}");
+                endpoints.MapControllerRoute("default", "{controller=Photos}/{action=Index}/{id?}");
             });
         }
     }

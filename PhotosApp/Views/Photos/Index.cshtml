@@ -11,7 +11,7 @@
             {
                 <div class="pull-left col-md-4">
                     <div>
-                        <a asp-controller="Photo" asp-action="GetPhoto" asp-route-id="@item.Id">
+                        <a asp-controller="Photos" asp-action="GetPhoto" asp-route-id="@item.Id">
                             <img class="photoPreview" src="@("/photos/" + item.Id)"/>
                         </a>
                     </div>
@@ -28,7 +28,7 @@
             @if (User.Identity.IsAuthenticated)
             {
                 <text>Ничего не найдено...</text>
-                <text>&nbsp;<a asp-controller="Photo" asp-action="AddPhoto">Загрузите</a>&nbsp; свои фото</text>
+                <text>&nbsp;<a asp-controller="Photos" asp-action="AddPhoto">Загрузите</a>&nbsp; свои фото</text>
             }
             else
             {

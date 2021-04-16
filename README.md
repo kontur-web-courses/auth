@@ -83,7 +83,7 @@ dotnet add package Microsoft.EntityFrameworkCore.Design
 
 Наконец, можно выполнить команду генерации кода `Identity` (также в папке с проектом `PhotosApp`):
 ```
-dotnet aspnet-codegenerator identity -dc UsersDbContext -u PhotoAppUser -sqlite
+dotnet aspnet-codegenerator identity -dc UsersDbContext -u PhotosAppUser -sqlite
 ```
 
 Дополнительные параметры команды указывают:
@@ -125,7 +125,7 @@ if (env.IsDevelopment())
 ```cs
 app.UseEndpoints(endpoints =>
 {
-    endpoints.MapControllerRoute("default", "{controller=Photo}/{action=Index}/{id?}");
+    endpoints.MapControllerRoute("default", "{controller=Photos}/{action=Index}/{id?}");
     endpoints.MapRazorPages();
 });
 ```
@@ -192,17 +192,17 @@ dbContext.Database.Migrate()
 ```
 Здесь `dbContext` — экземпляр класса-наследника `DbContext`.
 
-Посмотри как метод `Migrate` используется в файле `Data/DataExtensions.cs` для `PhotosDbContext`,
+Посмотри как метод `Migrate` используется в файле `Data/PhotosAppDataExtensions.cs` для `PhotosDbContext`,
 и вызови `Migrate` аналогичным образом для `UsersDbContext`.
 В результате, если файл `PhotosApp.db` будет удален, то при запуске приложения
 он автоматически восстановится со всеми таблицами.
 
 
 Теперь надо добавить тестовых пользователей.
-Это умеет делать заготовленный метод `SeedWithSampleUsersAsync` из `Data/DataExtensions.cs`.
+Это умеет делать заготовленный метод `SeedWithSampleUsersAsync` из `Data/PhotosAppDataExtensions.cs`.
 Вызови его в `PrepareData`, чтобы при старте приложения создавались тестовые пользователи.
 Подсказка 1: Так как метод асинхронный, то его результат надо дождаться, вызвав метод `Wait`.
-Подсказка 2: `UserManager<PhotoAppUser>` можно достать из `ServiceProvider` аналогично `PhotosDbContext`.
+Подсказка 2: `UserManager<PhotosAppUser>` можно достать из `ServiceProvider` аналогично `PhotosDbContext`.
 
 
 ### 1.3. Аутентификация
@@ -225,10 +225,10 @@ app.UseEndpoints(endpoints => ...);
 ```
 
 
-Теперь попробуй зайти под пользователем `cristina`. Email и пароль можно найти в `Data/DataExtensions.cs`.
+Теперь попробуй зайти под пользователем `cristina`. Email и пароль можно найти в `Data/PhotosAppDataExtensions.cs`.
 
 
-Но даже если зайти под нужным пользователем, его фотки не будут показываться, пока не поправить `PhotoController`.
+Но даже если зайти под нужным пользователем, его фотки не будут показываться, пока не поправить `PhotosController`.
 Измени метод `GetOwnerId` так, чтобы он возвращал идентификатор залогиненного пользователя, а не идентификатор `vicky`:
 ```cs
 private string GetOwnerId()
@@ -244,7 +244,7 @@ private string GetOwnerId()
 Остался небольшой нюанс: Logout работает некорректно.
 После него не происходит перехода на главную страницу приложения, а в верхнем меню остается имя пользователя.
 Это происходит потому, что в `_LoginPartial.cshtml` указан некорректный `asp-route-returnUrl`.
-Должен быть `@Url.Action("Index", "Photo", new { area = "" })`.
+Должен быть `@Url.Action("Index", "Photos", new { area = "" })`.
 
 
 ### 1.4. Авторизация
@@ -256,7 +256,7 @@ private string GetOwnerId()
 Если пометить атрибутом `[Authorize]` контроллер, но надо разрешить некоторый метод, то метод помечается
 атрибутом `[AllowAnonymous]`.
 
-Защити все действия над фотографиями из `PhotoController`, кроме `Index`.
+Защити все действия над фотографиями из `PhotosController`, кроме `Index`.
 
 
 ### 1.5. Требования к паролям
@@ -286,7 +286,7 @@ https://docs.microsoft.com/ru-ru/aspnet/core/security/authentication/identity-co
 
 В реальных проектах так делать не надо, это только для разработки и обучения :)
 
-При желании можешь поменять пароли для `vicky`, `cristina` и `dev` в файле `DataExtensions.cs`, чтобы было проще.
+При желании можешь поменять пароли для `vicky`, `cristina` и `dev` в файле `Data/PhotosAppDataExtensions.cs`, чтобы было проще.
 
 Зарегистрируй нового пользователя с простым паролем из 6 символов: у тебя должно получиться.
 Затем выйди из него и зайди снова. Вход должен получиться, несмотря на то, что ты не подтверждал email.
@@ -294,8 +294,8 @@ https://docs.microsoft.com/ru-ru/aspnet/core/security/authentication/identity-co
 Все же может потребоваться добавить новые нестандартные правила проверки паролей.
 Например, проверить, что новый пароль не совпадает с логином пользователя.
 Проверка уже реализована в `Services/UsernameAsPasswordValidator.cs`. Изучи ее код.
-А затем добавь строчку `.AddPasswordValidator<UsernameAsPasswordValidator<PhotoAppUser>>()`
-в цепочку вызовов после `.AddDefaultIdentity<PhotoAppUser>()` и убедись, что нельзя зарегистрировать пользователя,
+А затем добавь строчку `.AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>()`
+в цепочку вызовов после `.AddDefaultIdentity<PhotosAppUser>()` и убедись, что нельзя зарегистрировать пользователя,
 если пароль совпадает с email.
 
 
@@ -316,7 +316,7 @@ services.Configure<PasswordHasherOptions>(options =>
 
 Полностью заменить алгоритм хэширования на свой можно так:
 ```cs
-services.AddScoped<IPasswordHasher<PhotoAppUser>, SimplePasswordHasher<PhotoAppUser>>();
+services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAppUser>>();
 ```
 
 Вот только `SimplePasswordHasher` из папки `Services` не до конца реализован.
@@ -342,7 +342,7 @@ services.AddScoped<IPasswordHasher<PhotoAppUser>, SimplePasswordHasher<PhotoAppU
 
 Но кроме атрибутов для локализации нужно поменять реализацию `IdentityErrorDescriber`.
 Уже есть готовая реализация, позаимствованная со StackOverflow: `Services/RussianIdentityErrorDescriber.cs`.
-В файле `IdentityHostingStartup.cs` в конфигурировании `Identity` (найди `services.AddDefaultIdentity<PhotoAppUser>()`)
+В файле `IdentityHostingStartup.cs` в конфигурировании `Identity` (найди `services.AddDefaultIdentity<PhotosAppUser>()`)
 добавь строчку `.AddErrorDescriber<RussianIdentityErrorDescriber>()`.
 
 Теперь попробуй зарегистрировать нового пользователя:
@@ -443,8 +443,8 @@ services.ConfigureApplicationCookie(options =>
 причем можешь снова использовать `PhotosApp.db` в качестве файла БД
 3. `dotnet ef migrations add Tickets --context TicketsDbContext` в папке `PhotosApp`
 4. `dotnet ef database update --context TicketsDbContext` в папке `PhotosApp`,
-но лучше добавить `dbContext.Database.Migrate()` в `Data/DataExtensions.cs`
-5. Вызови метод `SeedWithSampleTicketsAsync` в `Data/DataExtensions.cs`, передав туда `TicketsDbContext`,
+но лучше добавить `dbContext.Database.Migrate()` в `Data/PhotosAppDataExtensions.cs`
+5. Вызови метод `SeedWithSampleTicketsAsync` в `Data/PhotosAppDataExtensions.cs`, передав туда `TicketsDbContext`,
 чтобы зачищать все сессии перед стартом приложения. Пользователи каждый раз пересоздаются — значит
 нет смысла хранить сессии.
 
@@ -469,9 +469,9 @@ services.ConfigureApplicationCookie(options =>
 Подсказки:
 
 - В конфигурировании `Identity` в `IdentityHostingStartup.cs` надо добавить `.AddRoles<IdentityRole>()`
-сразу после `.AddDefaultIdentity<PhotoAppUser>()`
+сразу после `.AddDefaultIdentity<PhotosAppUser>()`
 - Нужно создать роль в БД. Код создания роли уже есть в методе `SeedWithSampleRolesAsync`.
-Сделай так, чтобы метод `SeedWithSampleRolesAsync` из `DataExtensions.cs` выполнялся при создании БД,
+Сделай так, чтобы метод `SeedWithSampleRolesAsync` из `Data/PhotosAppDataExtensions.cs` выполнялся при создании БД,
 т.е. в методе `PrepareData`, причем до `SeedWithSampleUsersAsync`.
 Тебе понадобится `RoleManager<IdentityRole>`: достань его из `ServiceProvider`.
 - Добавить пользователю новую роль можно командой `await userManager.AddToRoleAsync(user, "RoleName")`
@@ -519,7 +519,7 @@ services.AddAuthorization(options =>
 Claim, добавленные таким образом хранятся в отдельной таблице.
 Можешь в этом убедиться с помощью https://sqliteonline.com/.
 
-Теперь защити действие `EditPhoto` (и GET, и POST запросы) в `PhotoController`
+Теперь защити действие `EditPhoto` (и GET, и POST запросы) в `PhotosController`
 с помощью атрибута `[Authorize(Policy = "Beta")]`.
 
 
@@ -544,26 +544,26 @@ Claim, добавленные таким образом хранятся в от
 
 Когда закончишь с этим добавь еще одну политику: пусть только платым пользователям будет доступна загрузка фотографий.
 Назови политику `CanAddPhoto`, в качестве типа claim используй `subscription`, в качестве значения `paid`.
-Аналогично предыдущей политике, защити методы `PhotoController` для загрузки фотографий.
+Аналогично предыдущей политике, защити методы `PhotosController` для загрузки фотографий.
 и скрой ссылку «Добавить фото» в меню приложения. Также скрой ссылку на метод `AddPhoto` в `Index.cshtml`,
 которая показывается, когда у пользователя нет фотографий.
 
-А вот claim в пользователя надо выставить иначе. Путь он не хранится отдельно в таблице, а вычисляется по свойствам из `PhotoAppUser`.
+А вот claim в пользователя надо выставить иначе. Путь он не хранится отдельно в таблице, а вычисляется по свойствам из `PhotosAppUser`.
 
 Для этого:
 
-1. Добавь в класс `PhotoAppUser` булево свойство `Paid`.
+1. Добавь в класс `PhotosAppUser` булево свойство `Paid`.
 2. Создай миграцию, т.к. надо добавить новую колонку в таблицу пользователей:
 `dotnet ef migrations add Paid --context UsersDbContext` в папке `PhotosApp`
 2. Разбери generic-параметр `TUser` в методе `SeedWithSampleUsersAsync`, заменив его использования
-на тип `PhotoAppUser`.
+на тип `PhotosAppUser`.
 3. Сделай так, чтобы пользователю `cristina` при создании в свойство `Paid` выставлялось значение `true`. 
 4. Самое важное! Допиши класс `CustomClaimsPrincipalFactory` в файле `Services/Authorization/CustomClaimsPrincipalFactory.cs`.
-Сначала замени во всем файле использование `IdentityUser` на `PhotoAppUser`, 
+Сначала замени во всем файле использование `IdentityUser` на `PhotosAppUser`, 
 а затем сделай так, чтобы пользователю с `Paid == true` выставлялся claim `subscription` со значением `paid`.
 5. Зарегистрируй фабрику в `IdentityHostingStartup.cs` в конфигурации `Identity`,
 добавив для этого вызов `.AddClaimsPrincipalFactory<CustomClaimsPrincipalFactory>()`
-в цепочку вызовов после `.AddDefaultIdentity<PhotoAppUser>()`.
+в цепочку вызовов после `.AddDefaultIdentity<PhotosAppUser>()`.
 
 Убедись, что пользователю `cristina` доступно добавление фото, а для `vicky` не доступно.
 
@@ -603,7 +603,7 @@ policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
 services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
 ```
 
-Защити действия `GetPhoto`, `GetPhotoFile`, `EditPhoto` (оба), `DeletePhoto` в `PhotoController` с помощью новой политики.
+Защити действия `GetPhoto`, `GetPhotoFile`, `EditPhoto` (оба), `DeletePhoto` в `PhotosController` с помощью новой политики.
 Заметь, что это нормально использовать несколько атрибутов `Authorize` у метода.
 В этом случае для выполнения действия должны быть выполнены требования каждого атрибута.
 
@@ -865,7 +865,7 @@ services.AddAuthentication()
     .AddJwtBearer("AnotherJWT", options => { /* */ });
 ```
 
-`Identity` тоже добавляет свой способ аутентификации при вызове `services.AddDefaultIdentity<PhotoAppUser>()`.
+`Identity` тоже добавляет свой способ аутентификации при вызове `services.AddDefaultIdentity<PhotosAppUser>()`.
 В `AddDefaultIdentity` скрыт следующий код:
 ```cs
 services.AddAuthentication(o =>
@@ -1761,8 +1761,8 @@ options.DefaultPolicy = new AuthorizationPolicyBuilder()
 Теперь можно удалить файл `IdentityHostingStartup.cs`.
 
 
-В `DataExtensions.cs` в методе `PrepareData` закомментируй все, что связано с `UsersDbContext`, `TicketsDbContext`,
-`RoleManager` и `UserManager`.
+В `Data/PhotosAppDataExtensions.cs` в методе `PrepareData` закомментируй все, что связано
+с `UsersDbContext`, `TicketsDbContext`, `RoleManager` и `UserManager`.
 
 В `Startup.cs` удали вызов `endpoints.MapRazorPages();`, потому что они использовались только для `Identity`.
 
@@ -1866,7 +1866,7 @@ else
 </ul>
 ```
 
-А в `Views/Photo/Index.cshtml` замени код
+А в `Views/Photos/Index.cshtml` замени код
 ```html
 <a asp-area="Identity" asp-page="/Account/Login">
 ```
@@ -2012,7 +2012,7 @@ public IActionResult Login(bool rememberMe, string returnUrl)
 <input id="rememberMe" name="rememberMe" type="hidden" value="true" />
 ```
 
-А в `Views/Photo/Index.cshtml` замени код
+А в `Views/Photos/Index.cshtml` замени код
 ```html
 <a asp-controller="Passport" asp-action="Login">
 ```
@@ -2157,7 +2157,7 @@ private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
 Следовательно, можно отказаться от политики `MustOwnPhoto` в пользу access token.
 
 
-Закомментируй атрибут `[Authorize(Policy = "MustOwnPhoto")]` в `PhotoController`.
+Закомментируй атрибут `[Authorize(Policy = "MustOwnPhoto")]` в `PhotosController`.
 
 А теперь поставь эксперимент:
 

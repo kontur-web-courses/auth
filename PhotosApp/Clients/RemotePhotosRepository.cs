@@ -28,6 +28,30 @@ namespace PhotosApp.Clients
             this.mapper = mapper;
         }
 
+        public async Task<IEnumerable<PhotoEntity>> GetPhotosAsync(string ownerId)
+        {
+            var request = new HttpRequestMessage();
+            request.Method = HttpMethod.Get;
+            request.RequestUri = BuildUri($"/api/photos", $"ownerId={UrlEncode(ownerId)}");
+            request.Headers.Add(HeaderNames.Accept, MediaTypeNames.Application.Json);
+
+            var response = await SendAsync(request);
+
+            switch (response.StatusCode)
+            {
+                case HttpStatusCode.OK:
+                    var content = await response.Content.ReadAsStringAsync();
+                    var photos = JsonConvert.DeserializeObject<PhotoDto[]>(content);
+                    return mapper.Map<PhotoEntity[]>(photos);
+                case HttpStatusCode.NotFound:
+                case HttpStatusCode.Unauthorized:
+                case HttpStatusCode.Forbidden:
+                    return new PhotoEntity[0];
+                default:
+                    throw new UnexpectedStatusCodeException(response.StatusCode);
+            }
+        }
+
         public async Task<PhotoEntity> GetPhotoMetaAsync(Guid id)
         {
             var request = new HttpRequestMessage();
@@ -81,26 +105,30 @@ namespace PhotosApp.Clients
                     throw new UnexpectedStatusCodeException(response.StatusCode);
             }
         }
-
-        public async Task<IEnumerable<PhotoEntity>> GetPhotosAsync(string ownerId)
+        
+        public async Task<bool> AddPhotoAsync(string title, string ownerId, byte[] content)
         {
             var request = new HttpRequestMessage();
-            request.Method = HttpMethod.Get;
-            request.RequestUri = BuildUri($"/api/photos", $"ownerId={UrlEncode(ownerId)}");
+            request.Method = HttpMethod.Post;
+            request.RequestUri = BuildUri($"/api/photos");
             request.Headers.Add(HeaderNames.Accept, MediaTypeNames.Application.Json);
+            request.Content = SerializeToJsonContent(new PhotoToAddDto
+            {
+                Title = title,
+                OwnerId = ownerId,
+                Base64Content = Convert.ToBase64String(content)
+            });
 
             var response = await SendAsync(request);
 
             switch (response.StatusCode)
             {
-                case HttpStatusCode.OK:
-                    var content = await response.Content.ReadAsStringAsync();
-                    var photos = JsonConvert.DeserializeObject<PhotoDto[]>(content);
-                    return mapper.Map<PhotoEntity[]>(photos);
-                case HttpStatusCode.NotFound:
+                case HttpStatusCode.NoContent:
+                    return true;
+                case HttpStatusCode.Conflict:
                 case HttpStatusCode.Unauthorized:
                 case HttpStatusCode.Forbidden:
-                    return new PhotoEntity[0];
+                    return false;
                 default:
                     throw new UnexpectedStatusCodeException(response.StatusCode);
             }
@@ -123,34 +151,6 @@ namespace PhotosApp.Clients
             {
                 case HttpStatusCode.NoContent:
                 case HttpStatusCode.NotFound:
-                    return true;
-                case HttpStatusCode.Conflict:
-                case HttpStatusCode.Unauthorized:
-                case HttpStatusCode.Forbidden:
-                    return false;
-                default:
-                    throw new UnexpectedStatusCodeException(response.StatusCode);
-            }
-        }
-
-        public async Task<bool> AddPhotoAsync(string title, string ownerId, byte[] content)
-        {
-            var request = new HttpRequestMessage();
-            request.Method = HttpMethod.Post;
-            request.RequestUri = BuildUri($"/api/photos");
-            request.Headers.Add(HeaderNames.Accept, MediaTypeNames.Application.Json);
-            request.Content = SerializeToJsonContent(new PhotoToAddDto
-            {
-                Title = title,
-                OwnerId = ownerId,
-                Base64Content = Convert.ToBase64String(content)
-            });
-
-            var response = await SendAsync(request);
-
-            switch (response.StatusCode)
-            {
-                case HttpStatusCode.NoContent:
                     return true;
                 case HttpStatusCode.Conflict:
                 case HttpStatusCode.Unauthorized:

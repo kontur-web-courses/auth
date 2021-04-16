@@ -22,6 +22,14 @@ namespace PhotosService.Controllers
             this.mapper = mapper;
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetPhotos(string ownerId)
+        {
+            var photoEntities = await photosRepository.GetPhotosAsync(ownerId);
+            var photos = mapper.Map<IEnumerable<PhotoDto>>(photoEntities);
+            return Ok(photos.ToList());
+        }
+
         [HttpGet("{id}/meta")]
         public async Task<IActionResult> GetPhotoMeta(Guid id)
         {
@@ -41,14 +49,6 @@ namespace PhotosService.Controllers
                 return NotFound();
 
             return File(photoContent.Content, photoContent.ContentType, photoContent.FileName);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetPhotos(string ownerId)
-        {
-            var photoEntities = await photosRepository.GetPhotosAsync(ownerId);
-            var photos = mapper.Map<IEnumerable<PhotoDto>>(photoEntities);
-            return Ok(photos.ToList());
         }
 
         [HttpPost]

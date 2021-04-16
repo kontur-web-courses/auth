@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace PhotosService.Data
 {
-    public static class PhotosDataExtensions
+    public static class PhotosServiceDataExtensions
     {
         public static void PrepareData(this IHost host)
         {

@@ -10,10 +10,10 @@
     <div>
         <div class="h5">@Model.Photo.Title</div>
         <div class="bottomMargin">
-            <a asp-controller="Photo" asp-action="EditPhoto" asp-route-id="@Model.Photo.Id">Изменить подпись</a>
+            <a asp-controller="Photos" asp-action="EditPhoto" asp-route-id="@Model.Photo.Id">Изменить подпись</a>
             <text>&nbsp;</text>
             <form class="inline-block" onsubmit="return confirm('Удалить фото?')"
-                asp-controller="Photo" asp-action="DeletePhoto" asp-route-id="@Model.Photo.Id">
+                asp-controller="Photos" asp-action="DeletePhoto" asp-route-id="@Model.Photo.Id">
                 <button type="submit" class="link-button">Удалить фото</button>
             </form>
         </div>

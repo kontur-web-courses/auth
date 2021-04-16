@@ -11,12 +11,12 @@ using PhotosApp.Models;
 
 namespace PhotosApp.Controllers
 {
-    public class PhotoController : Controller
+    public class PhotosController : Controller
     {
         private readonly IPhotosRepository photosRepository;
         private readonly IMapper mapper;
 
-        public PhotoController(IPhotosRepository photosRepository, IMapper mapper)
+        public PhotosController(IPhotosRepository photosRepository, IMapper mapper)
         {
             this.photosRepository = photosRepository;
             this.mapper = mapper;
@@ -52,6 +52,41 @@ namespace PhotosApp.Controllers
                 return NotFound();
 
             return File(photoContent.Content, photoContent.ContentType, photoContent.FileName);
+        }
+
+        public IActionResult AddPhoto()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddPhoto(AddPhotoModel addPhotoModel)
+        {
+            if (addPhotoModel == null || !ModelState.IsValid)
+                return View();
+
+            var file = addPhotoModel.Files.FirstOrDefault();
+            if (file == null || file.Length == 0)
+                return View();
+
+            var title = addPhotoModel.Title;
+            var ownerId = GetOwnerId();
+
+            byte[] content;
+            using (var fileStream = file.OpenReadStream())
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    fileStream.CopyTo(memoryStream);
+                    content = memoryStream.ToArray();
+                }
+            }
+
+            if (!await photosRepository.AddPhotoAsync(title, ownerId, content))
+                return StatusCode(StatusCodes.Status409Conflict);
+
+            return RedirectToAction("Index");
         }
 
         public async Task<IActionResult> EditPhoto(Guid id)
@@ -95,41 +130,6 @@ namespace PhotosApp.Controllers
                 return NotFound();
 
             if (!await photosRepository.DeletePhotoAsync(photoEntity))
-                return StatusCode(StatusCodes.Status409Conflict);
-
-            return RedirectToAction("Index");
-        }
-
-        public IActionResult AddPhoto()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddPhoto(AddPhotoModel addPhotoModel)
-        {
-            if (addPhotoModel == null || !ModelState.IsValid)
-                return View();
-
-            var file = addPhotoModel.Files.FirstOrDefault();
-            if (file == null || file.Length == 0)
-                return View();
-
-            var title = addPhotoModel.Title;
-            var ownerId = GetOwnerId();
-
-            byte[] content;
-            using (var fileStream = file.OpenReadStream())
-            {
-                using (var memoryStream = new MemoryStream())
-                {
-                    fileStream.CopyTo(memoryStream);
-                    content = memoryStream.ToArray();
-                }
-            }
-
-            if (!await photosRepository.AddPhotoAsync(title, ownerId, content))
                 return StatusCode(StatusCodes.Status409Conflict);
 
             return RedirectToAction("Index");

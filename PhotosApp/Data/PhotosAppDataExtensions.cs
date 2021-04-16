@@ -11,7 +11,7 @@ using PhotosApp.Services.TicketStores;
 
 namespace PhotosApp.Data
 {
-    public static class DataExtensions
+    public static class PhotosAppDataExtensions
     {
         public static void PrepareData(this IHost host)
         {
