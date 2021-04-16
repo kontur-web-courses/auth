@@ -116,6 +116,11 @@ namespace PhotosApp.Areas.Identity
                 services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
                 services.AddAuthorization(options =>
                 {
+                    options.DefaultPolicy = new AuthorizationPolicyBuilder(
+                        JwtBearerDefaults.AuthenticationScheme,
+                        IdentityConstants.ApplicationScheme)
+                        .RequireAuthenticatedUser()
+                        .Build();
                     options.AddPolicy(
                         "Beta",
                         policyBuilder =>
@@ -136,6 +141,16 @@ namespace PhotosApp.Areas.Identity
                         {
                             policyBuilder.RequireAuthenticatedUser();
                             policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
+                        });
+                    options.AddPolicy(
+                        "Dev",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireRole("Dev");
+                            policyBuilder.AddAuthenticationSchemes(
+                                JwtBearerDefaults.AuthenticationScheme,
+                                IdentityConstants.ApplicationScheme);
                         });
                 });
             });
