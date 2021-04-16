@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Services.TicketStores;
 
 namespace PhotosApp.Data
@@ -23,9 +24,13 @@ namespace PhotosApp.Data
                     if (env.IsDevelopment())
                     {
                         scope.ServiceProvider.GetRequiredService<PhotosDbContext>().Database.Migrate();
+                        scope.ServiceProvider.GetRequiredService<UsersDbContext>().Database.Migrate();
 
                         var photosDbContext = scope.ServiceProvider.GetRequiredService<PhotosDbContext>();
                         photosDbContext.SeedWithSamplePhotosAsync().Wait();
+
+                        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>();
+                        userManager.SeedWithSampleUsersAsync().Wait();
                     }
                 }
                 catch (Exception e)
