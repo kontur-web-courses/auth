@@ -8,5 +8,6 @@ namespace PhotosService.Models
         public string Title { get; set; }
         public string FileName { get; set; }
         public string OwnerId { get; set; }
+        public string Url { get; set; }
     }
 }

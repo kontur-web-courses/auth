@@ -52,6 +52,26 @@
             "sourceFileMap": {
                 "/Views": "${workspaceFolder}/Views"
             }
+        },
+        {
+            "name": "launch PhotosSPA",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build Solution",
+            "program": "${workspaceFolder}/PhotosSPA/bin/Debug/net5.0/PhotosSPA.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/PhotosSPA",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "^\\s*Now listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
         }
     ]
 }

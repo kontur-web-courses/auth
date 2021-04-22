@@ -83,6 +83,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Certificates\urlkey.xml" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AutoMapper" Version="10.1.1" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1" />
     <PackageReference Include="IdentityModel" Version="5.1.0" />

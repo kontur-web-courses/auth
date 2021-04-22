@@ -1,0 +1,14 @@
+.photosContainer {
+    width: 400px;
+    margin: 0 auto;
+}
+
+.photoContainer {
+  margin-bottom: 30px;
+}
+
+.photo {
+  max-width: 400px;
+  width: 100%;
+  height: auto;
+}

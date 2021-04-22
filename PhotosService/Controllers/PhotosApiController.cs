@@ -25,8 +25,10 @@ namespace PhotosService.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPhotos(string ownerId)
         {
-            var photoEntities = await photosRepository.GetPhotosAsync(ownerId);
-            var photos = mapper.Map<IEnumerable<PhotoDto>>(photoEntities);
+            var photoEntities = (await photosRepository.GetPhotosAsync(ownerId)).ToList();
+            var photos = mapper.Map<List<PhotoDto>>(photoEntities);
+            foreach(var photo in photos)
+                photo.Url = GeneratePhotoUrl(photo);
             return Ok(photos.ToList());
         }
 
@@ -38,6 +40,7 @@ namespace PhotosService.Controllers
                 return NotFound();
 
             var photo = mapper.Map<PhotoDto>(photoEntity);
+            photo.Url = GeneratePhotoUrl(photo);
             return Ok(photo);
         }
 
@@ -86,6 +89,15 @@ namespace PhotosService.Controllers
             if (!result)
                 return Conflict();
             return NoContent();
+        }
+
+        private string GeneratePhotoUrl(PhotoDto photo)
+        {
+            var relativeUrl = Url.Action(nameof(GetPhotoContent), new {
+                id = photo.Id
+            });
+            var url = "https://localhost:6001" + relativeUrl;
+            return url;
         }
     }
 }
