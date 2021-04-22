@@ -180,7 +180,7 @@ namespace PhotosApp.Data
 
         private static async Task RegisterUserIfNotExists<TUser>(this UserManager<TUser> userManager,
             TUser user, string password)
-            where TUser : IdentityUser
+            where TUser : IdentityUser<string>
         {
             if (await userManager.FindByNameAsync(user.UserName) == null)
             {

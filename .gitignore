@@ -332,3 +332,4 @@ ASALocalRun/
 # Custom
 *.db
 tempkey.jwk
+tempkey.rsa
