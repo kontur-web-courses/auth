@@ -1,25 +1,25 @@
-export const ApplicationName = 'Photos SPA';
+export const ApplicationName = "Photos SPA";
 
 export const QueryParameterNames = {
-  ReturnUrl: 'returnUrl',
-  Message: 'message'
+  ReturnUrl: "returnUrl",
+  Message: "message",
 };
 
 export const LoginActions = {
-  Login: 'login',
-  LoginCallback: 'TODO: путь куда возвращать после логина на сервере авторизации',
-  LoginFailed: 'login-failed',
-  Profile: 'profile',
-  Register: 'register'
+  Login: "login",
+  LoginCallback: "TODO: путь куда возвращать после логина на сервере авторизации",
+  LoginFailed: "login-failed",
+  Profile: "profile",
+  Register: "register",
 };
 
 export const LogoutActions = {
-  Logout: 'logout',
-  LogoutCallback: 'TODO: путь куда возвращать после выхода на сервере авторизации',
-  LoggedOut: 'logged-out'
+  Logout: "logout",
+  LogoutCallback: "TODO: путь куда возвращать после выхода на сервере авторизации",
+  LoggedOut: "logged-out",
 };
 
-const prefix = '/authentication';
+const prefix = "/authentication";
 
 export const ApplicationPaths = {
   ApiAuthorizationPrefix: prefix,
@@ -32,8 +32,8 @@ export const ApplicationPaths = {
   LogOut: `${prefix}/${LogoutActions.Logout}`,
   LogOutCallback: `${prefix}/${LogoutActions.LogoutCallback}`,
   LoggedOut: `${prefix}/${LogoutActions.LoggedOut}`,
-  RegisterRedirectUrl: 'TODO: полный url куда отправлять для регистрации',
-  ProfileRedirectUrl: 'TODO: полный url куда отправлять для просмотра и редактирования профиля'
+  RegisterRedirectUrl: "TODO: полный url куда отправлять для регистрации",
+  ProfileRedirectUrl: "TODO: полный url куда отправлять для просмотра и редактирования профиля",
 };
 
 export const ApiAuthorizationClientConfiguration = {
@@ -46,4 +46,4 @@ export const ApiAuthorizationClientConfiguration = {
   scope: "TODO: запросить все доступные скоупы",
   // опциональные настройки
   // https://github.com/IdentityModel/oidc-client-js/wiki#other-optional-settings
-}
+};

@@ -1,7 +1,7 @@
-import React, { Component } from 'react';
-import authService from '../api-authorization/AuthorizeService';
-import { PhotosServiceUrl } from './PhotosConstants';
-import './Photos.css';
+import React, { Component } from "react";
+import authService from "../api-authorization/AuthorizeService";
+import { PhotosServiceUrl } from "./PhotosConstants";
+import "./Photos.css";
 
 export class Photos extends Component {
   static displayName = Photos.name;
@@ -21,9 +21,13 @@ export class Photos extends Component {
   // в зависимости от состояния либо показывается надпись «Загрузка...»,
   // либо показывается информация о фотографиях.
   render() {
-    const contents = this.state.loading
-      ? <p><em>Загрузка...</em></p>
-      : this.renderPhotos(this.state.photos);
+    const contents = this.state.loading ? (
+      <p>
+        <em>Загрузка...</em>
+      </p>
+    ) : (
+      this.renderPhotos(this.state.photos)
+    );
 
     return (
       <div className="photosContainer">
@@ -34,11 +38,7 @@ export class Photos extends Component {
   }
 
   renderPhotos(photos) {
-    return (
-      <div>
-        {photos.map(photo => this.renderPhoto(photo))}
-      </div>
-    );
+    return <div>{photos.map((photo) => this.renderPhoto(photo))}</div>;
   }
 
   // NOTE: Логика отрисовки информации про отдельную фотографию.
@@ -47,12 +47,16 @@ export class Photos extends Component {
     return (
       <div key={photo.id} className="photoContainer">
         <h3>{photo.title}</h3>
-          <ul>
-            <li><b>ID:</b> <span>{photo.id}</span></li>
-            <li><b>Файл:</b> <span>{photo.fileName}</span></li>
-          </ul>
-        </div>
-      );
+        <ul>
+          <li>
+            <b>ID:</b> <span>{photo.id}</span>
+          </li>
+          <li>
+            <b>Файл:</b> <span>{photo.fileName}</span>
+          </li>
+        </ul>
+      </div>
+    );
   }
 
   // NOTE: Запрос, получающий фотографии пользователя
@@ -69,9 +73,12 @@ export class Photos extends Component {
     }
 
     // NOTE: Если есть access token, то можно попробовать получить информацию о фотографиях
-    const response = await fetch(`${PhotosServiceUrl}/api/photos?ownerId=${encodeURIComponent(userId)}`, {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
-    });
+    const response = await fetch(
+      `${PhotosServiceUrl}/api/photos?ownerId=${encodeURIComponent(userId)}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
 
     // NOTE: Похоже токен больше не действует, поэтому надо попробовать его обновить.
     // Компонент Photos вложен в компонент AuthorizeRoute, поэтому после успешного выполнения signIn
