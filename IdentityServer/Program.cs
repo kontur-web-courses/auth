@@ -27,8 +27,12 @@ namespace IdentityServer
 
             try
             {
-                Log.Information("Starting host...");
-                CreateHostBuilder(args).Build().Run();
+                Log.Information("Creating web host builder");
+                var hostBuilder = CreateHostBuilder(args);
+                Log.Information("Building web host");
+                var host = hostBuilder.Build();
+                Log.Information("Running web host");
+                host.Run();
                 return 0;
             }
             catch (Exception ex)
