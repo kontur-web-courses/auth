@@ -1,4 +1,4 @@
-// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
+﻿// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
@@ -88,6 +88,47 @@ namespace IdentityServer
                     AccessTokenLifetime = 30,
 
                     AllowOfflineAccess = true
+                },
+                new Client
+                {
+                    ClientId = "Photos SPA",
+                    // NOTE: SPA не может хранить секрет, потому что полные исходники доступны в браузере
+                    RequireClientSecret = false,
+                    // NOTE: Поэтому для безопасного получения токена необходимо использовать Proof Key for Code Exchange
+                    // Эта опция включена по умолчанию, но здесь пусть будет включена явно
+                    RequirePkce = true,
+
+                    AllowedGrantTypes = GrantTypes.Code,
+                    
+                    // NOTE: показывать ли пользователю страницу consent со списком запрошенных разрешений
+                    RequireConsent = false,
+
+                    // NOTE: куда отправлять после логина
+                    RedirectUris = { "https://localhost:8001/authentication/signin-passport" },
+
+                    // NOTE: куда предлагать перейти после логаута
+                    PostLogoutRedirectUris = { "https://localhost:8001/authentication/signout-passport" },
+
+                    // NOTE: откуда могут приходить запросы из JS
+                    AllowedCorsOrigins = { "https://localhost:8001" },
+
+                    AllowedScopes = new List<string>
+                    {
+                        // NOTE: Позволяет запрашивать id token
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        // NOTE: Позволяет запрашивать профиль пользователя через id token
+                        IdentityServerConstants.StandardScopes.Profile,
+                        // NOTE: Позволяет запрашивать email пользователя через id token
+                        IdentityServerConstants.StandardScopes.Email,
+                    },
+
+                    // NOTE: Надо ли добавлять информацию о пользователе в id token при запросе одновременно
+                    // id token и access token, как это происходит в code flow.
+                    // Либо придется ее получать отдельно через user info endpoint.
+                    AlwaysIncludeUserClaimsInIdToken = true,
+
+                    // NOTE: refresh token точно не будет использоваться
+                    AllowOfflineAccess = false,
                 }
             };
     }

@@ -7,7 +7,7 @@ export const QueryParameterNames = {
 
 export const LoginActions = {
   Login: "login",
-  LoginCallback: "TODO: путь куда возвращать после логина на сервере авторизации",
+  LoginCallback: "signin-passport",
   LoginFailed: "login-failed",
   Profile: "profile",
   Register: "register",
@@ -15,7 +15,7 @@ export const LoginActions = {
 
 export const LogoutActions = {
   Logout: "logout",
-  LogoutCallback: "TODO: путь куда возвращать после выхода на сервере авторизации",
+  LogoutCallback: "signout-passport",
   LoggedOut: "logged-out",
 };
 
@@ -32,18 +32,19 @@ export const ApplicationPaths = {
   LogOut: `${prefix}/${LogoutActions.Logout}`,
   LogOutCallback: `${prefix}/${LogoutActions.LogoutCallback}`,
   LoggedOut: `${prefix}/${LogoutActions.LoggedOut}`,
-  RegisterRedirectUrl: "TODO: полный url куда отправлять для регистрации",
-  ProfileRedirectUrl: "TODO: полный url куда отправлять для просмотра и редактирования профиля",
+  RegisterRedirectUrl: "https://localhost:7001",
+  ProfileRedirectUrl: "https://localhost:7001/diagnostics",
 };
 
 export const ApiAuthorizationClientConfiguration = {
   // обязательные настройки
-  authority: "TODO: адрес сервера авторизации",
-  client_id: "TODO: идентификатор клиента",
-  redirect_uri: "TODO: полный URL куда возвращать после логина на сервере авторизации",
-  post_logout_redirect_uri: "TODO: полный URL куда возвращать после выхода на сервере авторизации",
-  response_type: "TODO: желаемый тип ответа от сервера авторизации",
-  scope: "TODO: запросить все доступные скоупы",
+  authority: "https://localhost:7001",
+  client_id: "Photos SPA",
+  redirect_uri: "https://localhost:8001/authentication/signin-passport",
+  post_logout_redirect_uri:
+    "https://localhost:8001/authentication/signout-passport",
+  response_type: "code",
+  scope: "openid profile email",
   // опциональные настройки
   // https://github.com/IdentityModel/oidc-client-js/wiki#other-optional-settings
 };
