@@ -1,4 +1,4 @@
-﻿// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
+// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
@@ -53,9 +53,7 @@ namespace IdentityServer
                     ClientSecrets = { new Secret("secret".Sha256()) },
 
                     AllowedGrantTypes = GrantTypes.Code,
-                    // NOTE: использовать ли Proof Key for Code Exchange
-                    // Это полезно для SPA и мобильных приложений, где client secret хранится у пользователя
-                    RequirePkce = true,
+                    
                     // NOTE: показывать ли пользователю страницу consent со списком запрошенных разрешений
                     RequireConsent = false,
 
