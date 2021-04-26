@@ -29,6 +29,17 @@ namespace PhotosService
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(
+                    builder =>
+                    {
+                        builder.WithOrigins("https://localhost:8001")
+                            .AllowAnyHeader()
+                            .AllowAnyMethod();
+                    });
+            });
+            
             services.AddControllers(options =>
             {
                 options.ReturnHttpNotAcceptable = true;
@@ -90,6 +101,7 @@ namespace PhotosService
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
+            app.UseCors();
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>
