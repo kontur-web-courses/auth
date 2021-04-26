@@ -1,4 +1,7 @@
+using System;
+using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -62,6 +65,8 @@ namespace PhotosService
                             return Task.CompletedTask;
                         }
                     };
+
+                    options.TokenValidationParameters.ClockSkew = TimeSpan.Zero;
                 });
         }
 

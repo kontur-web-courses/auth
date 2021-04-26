@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using PhotosApp.Clients;
 using PhotosApp.Clients.Models;
 using PhotosApp.Data;
@@ -66,10 +68,18 @@ namespace PhotosApp
 
             services.AddTransient<ICookieManager, ChunkingCookieManager>();
 
+            const string oidcAuthority = "https://localhost:7001";
+            var oidcConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+                $"{oidcAuthority}/.well-known/openid-configuration",
+                new OpenIdConnectConfigurationRetriever(),
+                new HttpDocumentRetriever());
+            services.AddSingleton<IConfigurationManager<OpenIdConnectConfiguration>>(oidcConfigurationManager);
+
             services.AddAuthentication()
                 .AddOpenIdConnect("Passport", "Паспорт", options =>
                 {
-                    options.Authority = "https://localhost:7001";
+                    options.ConfigurationManager = oidcConfigurationManager;
+                    options.Authority = oidcAuthority;
 
                     options.ClientId = "Photos App by OIDC";
                     options.ClientSecret = "secret";
@@ -79,6 +89,7 @@ namespace PhotosApp
                     options.Scope.Add("email");
                     options.Scope.Add("photos_app");
                     options.Scope.Add("photos");
+                    options.Scope.Add("offline_access");
 
                     options.CallbackPath = "/signin-passport";
                     options.SignedOutCallbackPath = "/signout-callback-passport";

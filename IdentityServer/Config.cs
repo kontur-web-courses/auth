@@ -83,6 +83,10 @@ namespace IdentityServer
                     // id token и access token, как это происходит в code flow.
                     // Либо придется ее получать отдельно через user info endpoint.
                     AlwaysIncludeUserClaimsInIdToken = true,
+
+                    AccessTokenLifetime = 30,
+
+                    AllowOfflineAccess = true
                 }
             };
     }
