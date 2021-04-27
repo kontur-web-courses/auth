@@ -5,9 +5,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using PhotosService.Data;
 using PhotosService.Models;
+using PhotosService.Services;
 
 namespace PhotosService.Controllers
 {
@@ -68,6 +70,26 @@ namespace PhotosService.Controllers
             return File(photoContent.Content, photoContent.ContentType, photoContent.FileName);
         }
 
+        [AllowAnonymous]
+        [HttpGet("{id}/signed-content")]
+        public async Task<IActionResult> GetPhotoSignedContent(Guid id)
+        {
+            var currentUrl = HttpContext.Request.GetEncodedUrl();
+            var check = SignedUrlHelpers.CheckSignedUrl(currentUrl);
+            if (!check)
+                return Forbid();
+            
+            var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
+            if (photoEntity == null)
+                return NotFound();
+
+            var photoContent = await photosRepository.GetPhotoContentAsync(id);
+            if (photoContent == null)
+                return NotFound();
+
+            return File(photoContent.Content, photoContent.ContentType, photoContent.FileName);
+        }
+
         [HttpPost]
         public async Task<IActionResult> AddPhoto(PhotoToAddDto photo,
             [FromHeader] JwtSecurityToken accessToken)
@@ -116,11 +138,14 @@ namespace PhotosService.Controllers
 
         private string GeneratePhotoUrl(PhotoDto photo)
         {
-            var relativeUrl = Url.Action(nameof(GetPhotoContent), new {
+            var relativeUrl = Url.Action(nameof(GetPhotoSignedContent), new {
                 id = photo.Id
             });
             var url = "https://localhost:6001" + relativeUrl;
-            return url;
+
+            var nowUtc = DateTime.UtcNow;
+            var signedUrl = SignedUrlHelpers.CreateSignedUrl(url, nowUtc, nowUtc.AddMinutes(5));
+            return signedUrl;
         }
     }
 }
