@@ -357,6 +357,16 @@ services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAp
 Сейчас, по понятным причинам, этого делать не нужно.
 
 
+### 1.R. Резюме
+
+Ты научился подключать к веб-приложению на ASP.NET Core простейшую аутентификацию и авторизацию
+с помощью встроенной `Identity`, а также в некоторой степени ее конфигурировать.
+При этом такую аутентификацию сложно считать полноценной даже для простейших приложений.
+
+Дополнительно ты познакомился с понятием scaffolding, миграциями в EntityFramework Core,
+а также реализацией хэширования паролей с солью.
+
+
 ## 2. Сессии
 
 После успешной аутентификации информация о пользователе по умолчанию хранится в cookie.
@@ -452,6 +462,21 @@ services.ConfigureApplicationCookie(options =>
 Обрати внимание, что теперь в аутентификационной куке хранится только идентификатор сессии.
 Вся остальная информация о пользователе хранится и незаметно достается из Sqlite,
 поэтому в поле `User` данные остались, что видно внизу страницы Decode.
+
+
+### 2.R. Резюме
+
+Ты познакомился с важными понятиями в реализации аутентификации ASP.NET Core:
+
+- ticket — удостоверение
+- principal — принципал (тот на кого выдано удостоверение, является личностью)
+- identity — личность
+- claim — утверждение (про личность)
+- user — пользователь (носитель одной или нескольких личностей)
+
+Ты немного больше узнал о сеансе (или сессии) пользователя:
+- Данные сеанса можно хранить не только в cookie, но и централизовано на стороне сервера
+- Сеанс может иметь sliding expiration, а значит его время действия не закончится, пока пользователь активен
 
 
 ## 3. Роли и политики
@@ -611,6 +636,13 @@ services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
 если текущий пользователь является владельцем фотографии.
 
 
+### 3.R. Резюме
+
+Ты познакомился с авторизацией на основе ролей и политик, а также научился предъявлять произвольные требования к пользователю
+за счет обработчиков требований. Оказалось, что политики более гибкий механизм, чем роли, а значит надо использовать их.
+Теперь авторизация в приложении достаточно гибкая.
+
+
 ## 4. Аутентификация через Google
 
 ASP.NET Core включает встроенную поддержку для OAuth, за счет чего к нему
@@ -690,6 +722,13 @@ https://console.developers.google.com/apis/credentials
 не будет ни фото, ни возможности их добавить.
 
 
+### 4.R. Резюме
+
+Многие пользователи предпочитают использовать внешние провайдера аутентификации,
+вместо того, чтобы создавать логин и пароль для каждого веб-приложения.
+Теперь ты знаешь как подключить внешнего провайдера аутентификации на примере Google.
+
+
 ## 5. Письма
 
 Хорошая практика — предлагать пользователю подтвердить адрес своей электронной почты,
@@ -732,6 +771,14 @@ services.AddTransient<IEmailSender, SimpleEmailSender>(serviceProvider =>
 Хоть подтвреждение почты является важной частью регистрации, в дальнейших заданиях она не понадобится.
 Поэтому можно вернуть обратно настройки безопасности аккаунта Google: https://myaccount.google.com/lesssecureapps
 А для настроек `UserName` и `Password` в `appsettings.json` задай пустые строки в качестве значений.
+
+
+### 5.R. Резюме
+
+Ты познакомился с тем, как пользоваться сервером отправки почты из ASP.NET Core.
+
+Отправка писем для подтверждения адреса электронной почты — это последний компонент качественной встроенной
+в приложение аутентификации и авторизации. Сейчас настройку `Identity` можно считать завершенной.
 
 
 ## 6. Json Web Token и схемы аутентификации
@@ -839,20 +886,14 @@ options.Events = new JwtBearerEvents
 которая требует авторизацию токеном и убедись, что пользователь заполнен.
 
 
-__Резюме.__  
-У тебя получилось собрать нестандартную аутентификацию из стандартных средств.
-JWT-токен штука стандартная, но обычно передается через Authorization Header, а не через cookie.
-А генерируется обычно в ходе специальных протоколов, например, в ходе OpenID Connect,
-который будет упоминаться через несколько заданий.
-
-
 ### 6.2. Несколько схем аутентификации
 
 Пора настроить авторизацию. Сейчас с настройками по умолчанию они использует только `Identity`.
 А использование `JwtBearer` приходится задавать явно, как в `HackController`.
 Надо сделать так, чтобы авторизация поддерживала оба способа аутентификации: `Identity` и `JwtBearer`.
 
-Сначала немного теории. У каждого способа аутентификации есть идентификатор — схема.
+
+Сначала теория. У каждого способа аутентификации есть идентификатор — схема.
 `Identity` использует сразу несколько схем. Название основной схемы хранится
 в константе `IdentityConstants.ApplicationScheme` и равно `"Identity.Application"`.
 Также в `Identity` используется схема `"Identity.External"` для внешних провайдеров, например, Google.
@@ -866,17 +907,48 @@ services.AddAuthentication()
 ```
 
 `Identity` тоже добавляет свой способ аутентификации при вызове `services.AddDefaultIdentity<PhotosAppUser>()`.
-В `AddDefaultIdentity` скрыт следующий код:
+Внутри `AddDefaultIdentity` скрыт следующий вызов:
+```cs
+services.AddIdentityCookies();
+```
+А в нем регистрируются сразу несколько способов аутентификации через cookie, в том числе упомянутые
+`"Identity.Application"` и `"Identity.External"`.
+
+
+Каждый способ аутентификации определяет поведение в следующих ситуациях: `Challenge`, `Authenticate`, `SignIn`, `SignOut`, `Forbid`.
+Эти ситуации удобно описать на примере способа аутентификации с cookie:
+- `Challenge` — «вызвать схему», используется если у пользователя не хватает прав, перекидывает на форму ввода логина и пароля
+- `Authenticate` — «аутентифицировать», из cookie достается информация о пользователе и формируется `ClaimsIdentity`.
+- `SignIn` — «войти», формируется `ClaimsIdentity` и сохраняется в cookie
+- `SignOut` — «выйти», cookie удаляется
+- `Forbid` — «запретить», переход на страницу, информирующей о запрете доступа
+
+Поведение в этих ситуациях зависит от обработчика и переданных ему опций.
+
+Например, вызов `.AddJwtBearer("SomeJWT", options => { /* */ })` определяет способ аутентификации с идентификатором `"SomeJWT"`,
+обработчиком `JwtBearereHandler` и некоторыми опциями по умолчанию, которые можно дополнить.
+А вызов `.AddIdentityCookies` определяет несколько способов аутентификации, один из которых имеет идентификатор `"Identity.Application"`,
+обработчик `CookieAuthenticationHandler` и некоторыми опциями.
+
+
+Раз схем много, то встает вопрос какая из них будет использоваться. Например, если выполнить вызов
+```cs
+HttpContext.SignInAsync(scheme, principal, properties)
+```
+Тут очевидно, что использоваться будет схема из переменной `scheme`.
+А вот если ее не передать, как часто бывает, то из настройки `DefaultSignInScheme`, либо из настройки `DefaultScheme`,
+если предыдущая не найдена.
+
+Кажется, что настройки `DefaultSignInScheme` и `DefaultScheme` нигде не задаются, но это не так.
+Вызов `services.AddAuthentication("Bearer")` задает строку `"Bearer"` в качестве `DefaultScheme`.
+А в методе `AddDefaultIdentity` скрыта такая конфигурация:
 ```cs
 services.AddAuthentication(o =>
 {
     o.DefaultScheme = IdentityConstants.ApplicationScheme;
     o.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-}).AddIdentityCookies();
+});
 ```
-`AddIdentityCookies` — это добавляемый способ аутентификации.
-А настройка `DefaultScheme` — это та схема, которая будет использоваться по умолчанию для различных операций.
-В том числе атрибутом `[Authorize]`. И `AddDefaultIdentity` выставляет `Identity` для использования по умолчанию.
 
 
 `Identity` в качестве схемы по умолчанию — это нормально, пусть так и будет.
@@ -936,12 +1008,7 @@ services.AddAuthorization(options =>
 7. Убедись, что в качестве имени пользователя в правом верхнем углу страницы «Decode» отображается `vicky@gmail.com`.
 
 
-__Резюме.__  
-Теперь ты знаешь, что при авторизации можно использовать несколько схем аутентификации, каждая из которых будет давать
-пользователю соответствующие права.
-
-
-## 6.3. Порядок схем аутентификации
+### 6.3. Порядок схем аутентификации
 
 А теперь еще немного теории про схемы аутентификации и политики авторизации.
 
@@ -1049,7 +1116,18 @@ policyBuilder.AddAuthenticationSchemes("Identity.Application", "Bearer")
 Вывод: чтобы не получать странные спецэффекты, во всех политиках стоит использовать один и тот же набор схем аутентификации.
 
 
-__Резюме.__  
+### 6.R. Резюме
+
+Ты познакомился с JWT-токенами. Дальше познакомишься еще более плотно.
+
+У тебя получилось собрать нестандартную аутентификацию из стандартных средств.
+JWT-токен штука стандартная, но обычно передается через Authorization Header, а не через cookie.
+А генерируется обычно в ходе специальных протоколов, например, в ходе OpenID Connect,
+который будет упоминаться через несколько заданий.
+
+Теперь ты знаешь, что при авторизации можно использовать несколько схем аутентификации, каждая из которых будет давать
+пользователю соответствующие права.
+
 Авторизация в ASP.NET Core содержит много нюансов и иногда может быть полезно залезть в исходники.
 А чтобы не получать странные спецэффекты, во всех политиках стоит использовать один и тот же набор схем аутентификации.
 
@@ -1361,6 +1439,22 @@ httpClient.SetBearerToken(accessToken);
 Ура, токен проверен!
 
 
+### 7.R. Резюме
+
+Ты научился пользоваться сервером авторизации в простейшем случае — Client Credentials Flow.
+Этот flow позволяет производить авторизацию приложения в других сервисах. И это довольно важный сценарий,
+хотя дальше будет показано, что можно авторизовать не приложение в сервисе, а сразу пользователя в сервисе.
+
+Ты еще чуть лучше познакомился с JWT-токенами и научился их проверять.
+
+Пожалуй сейчас сложность и функциональность аутентификации и авторизации, встроенной прямо в приложение близки к максимуму:
+вход по логину/паролю, отправка писем, вход через внешние провайдеры, настроенные политики авторизации,
+использование приложением других сервисов и авторизация в них. Куда еще сложнее?
+
+В следующих заданиях произойдет постепенный переход от аутентификации, встроенной в приложение,
+к аутентификации через специальное приложение, а конкретно — через сервер авторизации.
+
+
 ## 8. Аутентификация с помощью OpenID Connect
 
 OpenID Connect (кратко OIDC) — расширение OAuth, которое позволяет стандартным образом получать
@@ -1427,7 +1521,7 @@ Google уже поддерживает протокол OpenID Connect, поэт
 
 Пришло время лучше разобраться как работает аутентификация с помощью внешних провайдеров при использовании Identity.
 
-Когда подключается Identity с помощью `AddDefaultIdentity` происходит регистрация нескольких схем аутентификации,
+Когда подключается `Identity` с помощью `AddDefaultIdentity` происходит регистрация нескольких схем аутентификации,
 работающих по cookie. Основная из них уже знакомая `"Identity.Application"`. Но при первом входе пользователя
 с помощью внешнего провайдера используется другая схема — `"Identity.External"`.
 
@@ -1586,9 +1680,7 @@ new Client
         ClientSecrets = { new Secret("secret".Sha256()) },
 
         AllowedGrantTypes = GrantTypes.Code,
-        // NOTE: использовать ли Proof Key for Code Exchange
-        // Это полезно для SPA и мобильных приложений, где client secret хранится у пользователя
-        RequirePkce = true,
+        
         // NOTE: показывать ли пользователю страницу consent со списком запрошенных разрешений
         RequireConsent = false,
 
@@ -1656,11 +1748,17 @@ services.AddAuthentication()
 пользователя видна на странице «Decode» в `PhotosApp.Auth.External` куке.
 
 
+### 8.R. Резюме
+
+Ты научился создавать свой сервер авторизации, работающий по протоколу OpenID Connect и подключил его приложению
+в качестве внешнего провайдера аутентификации.
+
+
 ## 9. Аутентификация только через IdentityServer
 
 На данный момент было продемонстрировано два разных подхода к аутентификации:
 
-- аутентификация внутри приложения (с использованием Identity)
+- аутентификация внутри приложения (с использованием `Identity`)
 - аутентификация через внешнего провайдера (Google, Passport)
 
 Для отдельных веб-приложений — идеальнй подход.
@@ -1671,7 +1769,7 @@ services.AddAuthentication()
 один раз в IdentityServer компании, а дальше все веб-приложения компании будут его узнавать.
 
 Пойдем по пути отдельного IdentityServer, тем более что многое уже готово: IdentityServer есть, схема Passport создана.
-Нужно только перенести пользователей из приложения в сервер авторизации, удалить Identity и еще кое-какие нюансы.
+Нужно только перенести пользователей из приложения в сервер авторизации, удалить `Identity` и еще кое-какие нюансы.
 
 
 ### 9.1. Перенос пользователей в IdentityServer 
@@ -1687,6 +1785,7 @@ new TestUser
     Password = "Pass!2",
     Claims =
     {
+        new Claim(JwtClaimTypes.Name, "vicky@gmail.com"),
         new Claim(JwtClaimTypes.Email, "vicky@gmail.com"),
         new Claim("testing", "beta"),
     }
@@ -1698,6 +1797,7 @@ new TestUser
     Password = "Pass!2",
     Claims =
     {
+        new Claim(JwtClaimTypes.Name, "cristina@gmail.com"),
         new Claim(JwtClaimTypes.Email, "cristina@gmail.com"),
         new Claim("subscription", "paid"),
     }
@@ -1709,6 +1809,7 @@ new TestUser
     Password = "Pass!2",
     Claims =
     {
+        new Claim(JwtClaimTypes.Name, "dev@gmail.com"),
         new Claim(JwtClaimTypes.Email, "dev@gmail.com"),
         new Claim("subscription", "paid"),
         new Claim("role", "Dev")
@@ -2080,6 +2181,12 @@ new IdentityResource("photos_app", "Web Photos", new []
 Убедись, что ему доступно добавление фотографий и оно работает.
 Перейди на страницу «Decode» и убедись, что в `User` есть claim `subscription`,
 а также claim `role` — `http://schemas.microsoft.com/ws/2008/06/identity/claims/role`.
+
+
+### 9.R. Резюме
+
+Ты перешел от встроенной аутентификации к аутентификации через собственный сервер авторизации.
+И получил вполне работающий вариант — пользователь может войти, выйти, а также действуют политики авторизации.
 
 
 ## 10. Авторизация в другом сервисе с помощью Authorization Code Flow
@@ -2687,3 +2794,736 @@ options.Events = new OpenIdConnectEvents()
 
 Добавь и с помощью отладки проверь, что токены действительно приходят.
 А сохранить их в нужную тебе базу данных — дело нехитрое.
+
+
+### 10.R. Резюме
+
+Ты познакомился с Authorization Code Flow, а значит научился авторизовать пользователя в стороннем сервисе,
+вместо того, чтобы авторизовать приложение в это сервисе, как это было в Client Credentials Flow.
+
+И тут оказалось много нюансов:
+- access-токен может быть короткоживущим или долгоживущим;
+- access-токен можно проверять по подписи, а можно через интроспекцию
+- когда действие access-токена истекает его можно обновлять с помощью refresh-токена или через Silent Renew
+
+В результате получилась полноценная аутентификация и авторизация с использованием сервера авторизации
+по протоколу OpenID Connect, когда токены хранятся в cookie.
+
+
+## 11. Использование OpenID Connect на стороне клиента
+
+В предыдущих заданиях управление токенами происходило на стороне сервера:
+- на стороне сервера инициировался переход в сервер авторизации для входа пользователя
+- сервер обрабатывал обратный вызов `/signin-passport` после успешного логина,
+в котором происходил обмен authorization code на токены
+- полученные от сервера авторизации токены сохранялись в http-only cookie,
+которая была недоступна клиентскому JavaScript
+- сервер получал новые access-токены по refresh-токену
+
+Это была полностью рабочая схема, которую можно использовать в веб-приложениях,
+в том числе в Single Page Applications. Минус только в том, что если хочется использовать
+access-токены, то нужно получать refresh-токен. А это может быть нежелательно, ведь refresh-токен
+предполагает доступ в данным пользователя дажет тогда, когда он неактивен.
+
+Альтернативное решение — это управление токенами на стороне клиента.
+В этом случае id-токены и access-токены сохраняются в LocalStorage браузера, а не в cookie,
+а обновлять их можно без использования refresh-токена с помощью подхода `Silent Renew`.
+
+Вот этот альтернативный подход и надо опробовать на примере приложения `PhotosSPA`.
+
+
+### 11.1. Аутентификация
+
+Для начала научись запускать приложение `PhotosSPA`.
+Это можно сделать под откладкой  или с помощью файлов папки `launch`.
+Приложение должно успешно запуститься по адресу `https://localhost:8001` и поприветствовать тебя на главной странице.
+Другие страницы пока не должны работать правильно.
+
+Загляни в файл `Startup.cs` в `PhotosSPA` и обрати внимание, что делает в этом приложении серверная часть.
+Примерно ничего. Она просто отдает статику: статику из `wwwroot` и статику SPA-приложения из `ClientApp`.
+Еще в ASP.NET Core есть обработчик для показа страницы в случае ошибки на бэкенде, но на этом все:
+никаких контроллеров, никаких razor-страниц.
+
+*Замечание. Есть нюанс, что в среде `Development` для SPA на самом деле запускается webpack dev server,*
+*который на лету строит и отдает клиенсткие скрипты, но сам ASP.NET Core от этого больше не делает.*
+
+
+Начать стоит с добавления информации о новом приложении в сервер авторзации.
+Для этого в файл `Config.cs` добавь следующую конфигурацию:
+```cs
+new Client
+{
+    ClientId = "Photos SPA",
+    // NOTE: SPA не может хранить секрет, потому что полные исходники доступны в браузере
+    RequireClientSecret = false,
+    // NOTE: Поэтому для безопасного получения токена необходимо использовать Proof Key for Code Exchange
+    // Эта опция включена по умолчанию, но здесь пусть будет включена явно
+    RequirePkce = true,
+
+    AllowedGrantTypes = GrantTypes.Code,
+    
+    // NOTE: показывать ли пользователю страницу consent со списком запрошенных разрешений
+    RequireConsent = false,
+
+    // NOTE: куда отправлять после логина
+    RedirectUris = { "TODO: полный URL куда возвращать после логина на сервере авторизации" },
+
+    // NOTE: куда предлагать перейти после логаута
+    PostLogoutRedirectUris = { "TODO: полный URL куда возвращать после выхода на сервере авторизации" },
+
+    // NOTE: откуда могут приходить запросы из JS
+    AllowedCorsOrigins = { "TODO: надо зарегистрировать адрес приложения в качестве допустимого origin" },
+
+    AllowedScopes = new List<string>
+    {
+        // NOTE: Позволяет запрашивать id token
+        IdentityServerConstants.StandardScopes.OpenId,
+        // NOTE: Позволяет запрашивать профиль пользователя через id token
+        IdentityServerConstants.StandardScopes.Profile,
+        // NOTE: Позволяет запрашивать email пользователя через id token
+        IdentityServerConstants.StandardScopes.Email,
+    },
+
+    // NOTE: Надо ли добавлять информацию о пользователе в id token при запросе одновременно
+    // id token и access token, как это происходит в code flow.
+    // Либо придется ее получать отдельно через user info endpoint.
+    AlwaysIncludeUserClaimsInIdToken = true,
+
+    // NOTE: refresh token точно не будет использоваться
+    AllowOfflineAccess = false,
+}
+```
+
+Аккуратно прочти комментарии в этой конфигурации. Обрати внимание на настройки `RequireClientSecret = false`
+и `AllowOfflineAccess = false`. Также заметь, что конфигурация заполнена не полностью — ты ее дозаполнишь
+чуть позже самостоятельно. 
+
+Теперь сервер авторизации знает о приложении `PhotosSPA`.
+
+
+Следующий шаг — сделать так, чтобы приложение `PhotosSPA` узнало о сервере авторизации.
+
+Взаимодействие по протоколу OIDC между приложением и сервером авторизации будет осуществляться через
+библиотеку `oidc-client.js`. Чтобы ей было удобнее пользоватся в приложении `PhotosSPA` над ней написана
+обертка в файле `src/components/api-authorization/AuthorizeService.js`. А настройки аутентификации и авторизации
+вынесены в файл `src/components/api-authorization/ApiAuthorizationConstants.js`.
+
+Чтобы приложение узнало о сервере авторизации заполни в `ApiAuthorizationConstants.js` все значения в объекте
+`ApiAuthorizationClientConfiguration`, помеченные TODO. Для этого воспользуйся конфигурацией из `Config.cs`.
+Эту конфигурацию придется дозаполнить.
+
+Подсказки:
+- Раз в сервере авторизации `AllowedGrantTypes = GrantTypes.Code`, то подразумевается response type `code`.
+- `redirect_uri` и `post_logout_redirect_uri` можно придумать любые, но эти URL должны соответствовать
+`ApplicationPaths.LoginCallback` и `ApplicationPaths.LogOutCallback` из `ApiAuthorizationConstants.js`,
+а также конфигурации из `Config.cs`.
+
+
+Когда ты заполнишь `ApiAuthorizationClientConfiguration` можно попробовать запустить `PhotosSPA` и `IdentityServer`,
+и в приложении `PhotosSPA` нажать на кнопку `Login`. К сожалению, даже при корректной конфигурации будет ошибка.
+Все из-за CORS.
+
+Так как сейчас все запросы к `IdentityServer` идут напрямую из браузера, а не из серверной части веб-приложения,
+надо конфигурировать CORS. Благо сделать это в `IdentityServer` очень просто. Надо всего лишь задать настройку
+`AllowedCorsOrigins` в конфигурации клиента в `Config.cs`. Сделай это. При этом помни, что origin включает
+схему, хост и порт, но не включает путь. `https://google.com` — это origin. `https://google.com/` — нет.
+
+
+Убедись, что сейчас вход в приложении `PhotosSPA` работает: при нажатии на `Login` происходит переход
+в сервер авторизации, там можно зайти, например, под `cristina`, после чего произойдет переход в приложение,
+а в нем в правом верхнем углу появится email пользователя.
+
+После входа убедись, что id-токен и access-токен от `IdentityServer` находятся в LocalStorage браузера.
+В Chrome это можно сделать так: открой «Developer Tools», в них вкладку «Application»,
+а на ней секцию «Storage» и пункт «Local Storage». Там найди запись, начинающуюся с «Photos SPAuser».
+Внутри тебя должен ждать JSON такого вида:
+```json
+access_token: "..."
+expires_at: 1619445822
+id_token: "..."
+profile: ...
+scope: "openid profile email"
+session_state: "..."
+token_type: "Bearer"
+```
+
+Также убедись, что и `Logout` работает, причем после выхода
+в сервере авторизации происходит переход обратно в приложение.
+
+
+Последнее, что надо сделать — это задать настройки `RegisterRedirectUrl` и `ProfileRedirectUrl`
+в `ApiAuthorizationConstants.js`. На нашем сервере авторизации нет специализированных страниц регистрации и профиля,
+поэтому пусть `RegisterRedirectUrl` ведет на `https://localhost:7001`,
+а `ProfileRedirectUrl` ведет на `https://localhost:7001/diagnostics`.
+
+
+### 11.2. Авторизация
+
+Пришло время научиться получать фотографии. В этот раз напрямую из `PhotosService`.
+А все потому, что access-токен уже находится в браузере и его не надо доставать из cookie.
+
+Чтобы access-токен, который получает `oidc-client.js`, признавался `PhotosService` надо
+разрешить серверу авторизации отдавать скоуп `photos`, а приложению этот скоуп запрашивать.
+Первое можно сделать в `Config.cs`, второе — в `ApiAuthorizationConstants.js`.
+
+
+Еще один нюанс, связанный с тем, что теперь все работает в браузере — это CORS.
+Надо разрешить `PhotosService` принимать запросы от `https://localhost:8001`.
+
+Для этого в `Startup.cs` в `PhotosService` добавь следующий код в метод `ConfigureServices`:
+```cs
+services.AddCors(options =>
+{
+    options.AddDefaultPolicy(
+        builder =>
+        {
+            builder.WithOrigins("https://localhost:8001")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
+```
+
+А в том же файле в методе `Configure` добавь между `app.UseRouting();` и `app.UseAuthentication();`
+такой вызов:
+```cs
+app.UseCors();
+```
+Порядок подключений middleware здесь имеет значение!
+
+
+Теперь запусти `PhotosSPA`, `IdentityService` и `PhotosService`, а затем перейди на страницу «Все фотографии»
+в приложении. Должен появиться список названий фотографий (пока еще без самих фотографий).
+
+А все потому, что в `Photos.js` в функции `populatePhotos` происходит запрос к `PhotosService` с access-токеном,
+а `PhotosService` готов отдать информацию о фотографиях.
+
+
+Хоть целью не является изучение разработки клиентской части веб-приложений,
+можешь прочесть комментарии в файле `Photos.js` и примерно понять как в нем все устроено.
+
+
+### 11.3. Silent Renew
+
+Access-токен имеет ограниченное время действия. А значит через некоторое время после входа
+в приложение `PhotosApp` список фотографий перестанет показываться.
+
+Сейчас у access-токен выставляется некоторое время жизни по умолчанию и оно достаточно большое.
+Сделай его поменьше, задав в `Config.cs` в клиенте `"Photos SPA"` опцию
+```cs
+AccessTokenLifetime = 1*60,
+```
+
+Запусти `PhotosSPA`, `IdentityService` и `PhotosService`, выйди из текущего аккаунта, если был вход,
+зайди заново, перейди на страницу «Все фотографии», чтобы убедиться, что они на месте.
+Подожди минуту, перейди на главную страницу, кликнув на логотип, а затем вернись на «Все фотографии».
+Убедись, что возникает ошибка доступа.
+
+
+А теперь, когда проблема лежит на поверхности, можно ее исправить.
+Для этого добавь в `ApiAuthorizationClientConfiguration` в файле `ApiAuthorizationConstants.js` такие настройки:
+```js
+automaticSilentRenew: true, // Пытаться ли автоматически обновлять access token перед истечением срока его действия
+accessTokenExpiringNotificationTime: 30, // За сколько секунд до истечения срока действия access token делать попытку его обновления
+includeIdTokenInSilentRenew: true, // Включать ли id_token в качестве id_token_hint при вызовах silent renew
+```
+
+Самая важная настройка здесь, конечно,  `automaticSilentRenew`. Она разрешает обновлять access-токен в фоновом режиме.
+Токен лучше обновлять заранее, еще до того, как его время действия истечет.
+Насколько заранее определяет настройка `accessTokenExpiringNotificationTime`.
+
+Хорошо, когда время в `accessTokenExpiringNotificationTime` больше, чем `AccessTokenLifetime`, иначе запросы
+на новый access-токен будут происходить один за другим. Сейчас это верно, но чтобы четко проверить работу
+`Silent Renew` увеличь время жизни access-токена в `Config.cs`:
+```cs
+AccessTokenLifetime = 2*60,
+```
+
+
+Теперь снова запусти приложение и сервисы, выйди, войди. Подожди 90 секунд и убедись
+по логам в консоли `IdentityServer`, что кто-то постучался за новыми токенами.
+А после того, как пройдет больше 120 секунд убедись, что можно перейти на главную страницу,
+а затем на страницу «Все фотографии» и список фотографий будет подгружен.
+
+
+На самом деле автоматический `Silent Renew` не решает всех проблем, т.к. возможна ситуация,
+когда пользователь закроет вкладку и автоматический `Silent Renew` будет пропущен.
+При следующем заходе на вкладку аутентификация формально сохранится, а вот время действия
+access-токена уже истечет.
+
+Эту ситуацию можно обработать по-разному. И поведение должно зависеть от логики приложения
+и ожиданий пользователя.
+
+Один из возможных вариантов — подписаться на уведомление `UserManager` из `oidc-client.js` о том,
+что access-токен истек: `userManager.events.addAccessTokenExpired`. И признавать пользователя
+«неаутентифицированным» при срабатывании этого события.
+В результате при открытии страницы, где требуется аутентификация, например, «Все фотографии»,
+будет происходить переадресация на страницу логина в `IdentityServer`. Как будно пользователь
+еще не входил. Но если в `IdentityServer` сессия сохранилась, то тут же последует обратный переход,
+а пользователь без лишних действий снова увидет свои данные.
+
+Добиться такого поведения можно следующими изменениями в файле `AuthorizeService.js`.
+
+Во-первых, надо обновить метод `getUser`:
+```js
+async getUser() {
+if (this._user && this._user.profile) {
+    return this._user.profile;
+}
+
+await this.ensureUserManagerInitialized();
+const user = await this.userManager.getUser();
+const accessTokenExpired = !user || typeof user.expired !== "boolean" || user.expired;
+return user && !accessTokenExpired ? user.profile : null;
+}
+```
+
+Во-вторых, надо добавить в методе `ensureUserManagerInitialized` подписку на `addAccessTokenExpired`:
+```js
+this.userManager.events.addAccessTokenExpired(async () => {
+    if (this._user !== undefined) {
+    this.updateState(undefined);
+    }
+});
+```
+
+
+Для проверки работоспособности решения надо выполнить вход, перейти на страницу «Все фотографии»,
+сохранить ее адрес в буфер обмена, закрыть вкладку со страницей, не закрывая браузера,
+подождать 2 минуты до истечения срока действия access-токена, вновь перейти на страницу «Все фотографии»
+с помощью сохраненного адреса. В результате произойдет несколько переходов без действий со стороны пользователя,
+а затем список фотографий отобразится.
+
+
+### 11.4. Получение контента с помощью Signed URL
+
+Фотографии пользователей надо показывать. Только как сделать это правильно?
+
+Вопрос нетривиальный, т.к. браузеру удобно, когда картинка — это тег с некоторым адресом <img scr="адрес/картинки">.
+Браузер готов самостоятельно получить GET-запросом картинку и закэшировать, но он не будет отправлять access-токен
+в HTTP-заголовке `Authorization`. Он отправит только cookies. А в текущей схеме в cookies нет access-токена.
+
+Так как же передавать access-токен для получения картинки из `PhotosService`?
+
+
+Возможные идеи: 
+
+1. Передавать access-токен через URL, например, через query string.
+2. Создавать не http-only cookie с access-токеном на стороне клиента.
+3. Создавать http-only cookie с access-токеном с помощью бэкенда.
+4. Получать картинки с помощью бэкенда, который будет делать запрос к `PhotosService` с access-токеном в заголовке,
+как это происходит в `PhotosApp`.
+
+
+Но у всех идей есть недостатки:
+
+1. Идея 1 просто небезопасна, ведь access-токен в этом случае осядет в логах всех промежуточных маршрутизаторов,
+по которым будет проходить запрос от браузера до `PhotosService`. Ведь URL доступен и логируется,
+в отличие от заголовков и тела запроса.
+2. Идея 2 небезопасна, если приложение не защищено от атаки XSS.
+3. Идеи 3 заставляет использовать бэкенд при каждом обновлении access-токена.
+4. Идея 4 заставляет вернуть сложный бэкенд, а вроде и без него было все хорошо в SPA-приложении. 
+
+
+Придется предложить еще одну нетривиальную идею и все-таки ее реализовать. Эта идея — Signed URL.
+
+Суть идеи — прилагать к URL контента некоторую подпись в качестве параметра query string, которая будет
+фиксировать остальные параметры запроса плюс содержать внутри время действия этого URL. Подпись будет формироваться
+с помощью закрытого ключа, а расшифровать и убедиться в ее подлинности сможет любой с помощью открытого ключа.
+
+Signed URL очень похож на идею 1, т.к. подпись — это почти тот же токен. Разница в том, что Signed URL может
+действовать занчительно меньше access-токена, а еще дает доступ только к одному элементу контента и только на чтение.
+
+*Замечание. Здесь не утверждается, что это лучшая идея для получения контента со сторонних сервисов в SPA-приложении.*
+
+
+Если методы для формирования Signed URL, а также их проверки уже написаны, то подключить это технологию просто.
+И эти методы уже реализованы в классе `SignedUrlHelpers` в `PhotosService`. Можешь посмотреть, как там все устроено,
+а можешь сразу перейти к использованию. Нужные методы — это `SignedUrlHelpers.CreateSignedUrl`
+и `SignedUrlHelpers.CheckSignedUrl`.
+
+Также облегчает задачу то, что `PhotosService` уже умеет возвращать URL для получения картинок при запросе
+информации о единичной фотографии или списка фотографий. И в списке фотографий даже видно этот URL.
+Только по нему ничего не удастся получить без access-токена.
+
+
+Поменяй в `Photos.js` из `PhotosSPA` код:
+```js
+<span>{photo.url}</span>
+```
+на следующий:
+```js
+<img src={photo.url} className="photo" />
+```
+И убедись, что фотографии не подружаются.
+
+
+Добавь в `PhotosApiController` из `PhotosService` метод, который будет обрабатывать
+`Signed URL` для фотографий и отдавать их содержимое:
+```cs
+[AllowAnonymous]
+[HttpGet("{id}/signed-content")]
+public async Task<IActionResult> GetPhotoSignedContent(Guid id)
+{
+    var currentUrl = HttpContext.Request.GetEncodedUrl();
+    var check = SignedUrlHelpers.CheckSignedUrl(currentUrl);
+    if (!check)
+        return Forbid();
+    
+    var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
+    if (photoEntity == null)
+        return NotFound();
+
+    var photoContent = await photosRepository.GetPhotoContentAsync(id);
+    if (photoContent == null)
+        return NotFound();
+
+    return File(photoContent.Content, photoContent.ContentType, photoContent.FileName);
+}
+```
+Он во многом похож на `GetPhotoContent`, только контроль доступа реализован иначе.
+Конечно, метод `GetPhotoSignedContent` должен быть помечен атрибутом `AllowAnonymous`,
+т.к. не использует стандартные механизмы авторизации.
+
+
+Наконец, замени в `PhotosApiController` из `PhotosService` логику построения URL для фотографии,
+чтобы URL указывал на `GetPhotoSignedContent` и подписывался:
+```cs
+private string GeneratePhotoUrl(PhotoDto photo)
+{
+    var relativeUrl = Url.Action(nameof(GetPhotoSignedContent), new {
+        id = photo.Id
+    });
+    var url = "https://localhost:6001" + relativeUrl;
+
+    var nowUtc = DateTime.UtcNow;
+    var signedUrl = SignedUrlHelpers.CreateSignedUrl(url, nowUtc, nowUtc.AddMinutes(5));
+    return signedUrl;
+}
+```
+
+
+Убедись, что теперь фотографии отображаются в `PhotosSPA`.
+
+
+### 11.R. Резюме
+
+Теперь у тебя получилась полноценная аутентификация и авторизация с использование сервера авторизации
+по протоколу OpenID Connect, когда токены хранятся в LocalStorage браузера.
+
+Такой вариант подходит для Single Page Application. Причем фронтенд веб-приложения может обращаться
+к различным API напрямую, используя хранящиеся в браузере токены. Правда это требует аккуратной настройки CORS. 
+
+Обновление токенов в этом случае происходит через Silent Renew в браузере,
+а защиту контента можно организовать с помощью Signed URL. При
+
+
+## 12. Подключение СУБД к IdentityServer
+
+Сейчас `IdentityServer` хранит все данные о пользователя в оперативной памяти.
+В реальности же данные о пользователях должны храниться в базе данных.
+
+Один из способов подключение базы данных к `IdentityServer` — это использовать `Identity`.
+
+Тебе уже известно, что `Identity` включает в себя `UserManager` для управления пользователями
+и `SignInManager` для управления сеансами пользователей. При этом для хранения данных использует
+интеграцию с EntityFramework Core, а значит может хранить данные в реляционных СУБД.
+
+Таким образом, если подключить `Identity` к `IdentityServer` и использовать `UserManager` и `SignInManager`,
+то задача подключения базы данных будет выполнена.
+
+А вот реализацию UI из `Identity` использовать совершенно не обязательно. Так что UI останется прежним.
+Только внутри надо будет использовать `UserManager` и `SignInManager`.
+
+
+### 12.1. Identity с EntityFramework Core
+
+Чтобы добавить `Identity` с EntityFramework Core для начала надо добавить в проект много сборок.
+Для этого выполни в папке проектом `IdentityServer` следущие команды:
+```
+dotnet add package IdentityServer4.AspNetIdentity
+dotnet add package Microsoft.AspNetCore.Identity.EntityFrameworkCore
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite
+dotnet add package Microsoft.EntityFrameworkCore.Tools
+```
+Здесь добавляется сборка для Sqlite, но могла бы быть и другая реляционная СУБД.
+
+
+Далее нужно определить и подключить контекст для EntityFramework Core в проекте `IdentityServer`.
+
+Создай файл `Models/ApplicationUser.cs` со следующим содержимым:
+```cs
+using Microsoft.AspNetCore.Identity;
+
+namespace IdentityServer.Models
+{
+    public class ApplicationUser : IdentityUser
+    {
+    }
+}
+```
+
+Создай файл `Data/ApplicationDbContext.cs` со следующим содержимым:
+```cs
+using IdentityServer.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
+namespace IdentityServer.Data
+{
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+    {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options)
+        {
+        }
+    }
+}
+```
+
+В методе `ConfigureServices` в `Startup.cs` подключи контекст:
+```cs
+services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite("DataSource=app.db;Cache=Shared"));
+```
+
+
+Теперь можно создать миграцию для созданного контекста `ApplicationDbContext` командой
+в папке с проектом `IdentityServer`:
+```
+dotnet ef migrations add Users --context ApplicationDbContext
+```
+
+
+Понадобятся начальные данные, поэтому добавь файл `Data/IdentityServerDataExtensions.cs` со следующим содержимым:
+```cs
+using IdentityServer.Models;
+using System;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace IdentityServer.Data
+{
+    public static class IdentityServerDataExtensions
+    {
+        public static void PrepareData(this IHost host)
+        {
+            using (var scope = host.Services.CreateScope())
+            {
+                try
+                {
+                    var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
+                    if (env.IsDevelopment())
+                    {
+                        scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.Migrate();
+
+                        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+                        userManager.SeedWithSampleUsersAsync().Wait();
+                    }
+                }
+                catch (Exception e)
+                {
+                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(e, "An error occurred while migrating or seeding the database.");
+                }
+            }
+        }
+
+        private static async Task SeedWithSampleUsersAsync(this UserManager<ApplicationUser> userManager)
+        {
+            // NOTE: ToList важен, так как при удалении пользователя меняется список пользователей
+            foreach (var user in userManager.Users.ToList())
+                await userManager.DeleteAsync(user);
+
+            {
+                var user = new ApplicationUser
+                {
+                    Id = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd",
+                    UserName = "vicky@gmail.com",
+                    Email = "vicky@gmail.com"
+                };
+                await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                await userManager.AddClaimAsync(user, new Claim("testing", "beta"));
+            }
+
+            {
+                var user = new ApplicationUser
+                {
+                    Id = "dcaec9ce-91c9-4105-8d4d-eee3365acd82",
+                    UserName = "cristina@gmail.com",
+                    Email = "cristina@gmail.com",
+                };
+                await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                await userManager.AddClaimAsync(user, new Claim("subscription", "paid"));
+            }
+
+            {
+                var user = new ApplicationUser
+                {
+                    Id = "b9991f69-b4c1-477d-9432-2f7cf6099e02",
+                    UserName = "dev@gmail.com",
+                    Email = "dev@gmail.com"
+                };
+                await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                await userManager.AddClaimAsync(user, new Claim("subscription", "paid"));
+                await userManager.AddClaimAsync(user, new Claim("role", "Dev"));
+            }
+        }
+
+        private static async Task RegisterUserIfNotExists<TUser>(this UserManager<TUser> userManager,
+            TUser user, string password)
+            where TUser : IdentityUser<string>
+        {
+            if (await userManager.FindByNameAsync(user.UserName) == null)
+            {
+                var result = await userManager.CreateAsync(user, password);
+                if (result.Succeeded)
+                {
+                    var code = await userManager.GenerateEmailConfirmationTokenAsync(user);
+                    await userManager.ConfirmEmailAsync(user, code);
+                }
+            }
+        }
+    }
+}
+```
+
+
+И подключи заполнение начальных данных, добавив следующий строки после `var host = hostBuilder.Build();`
+в `Program.cs` в `IdentityServer`:
+```cs
+Log.Information("Preparing data");
+host.PrepareData();
+```
+
+
+Данные готовы. Осталось подключить `Identity`, причем без UI.
+Так что надо использовать метод `AddIdentity`, а не `AddDefaultIdentity`.
+
+Для этого в методе `ConfigureServices` в `Startup.cs` добавь строчки:
+```cs
+services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+```
+
+И там же вместо строчки
+```cs
+.AddTestUsers(TestUsers.Users);
+```
+напиши
+```cs
+.AddAspNetIdentity<ApplicationUser>();
+```
+
+
+Финальный штрих: UI в `IdentityServer` теперь должен использовать `UserManager` и `SignInManager`, поэтому
+обнови файлы `Quickstart/Account/AccountController.cs` и `Quickstart/Account/ExternalController.cs`
+по заготовкам из папки `$Drafts` в проекте `IdentityServer`.
+
+
+Убедись, что `IdentityServer` работает как и раньше.
+Только вот данные теперь он хранит в Sqlite.
+                
+
+### 12.2. Identity с MongoDB
+
+В качестве альтернативы EntityFramework Core с реляционными СУБД,
+можно использовать другие реализации Identity, которые используют другие СУБД.
+Например, библиотеку `AspNetCore.Identity.Mongo`, использующую MongoDB в качестве СУБД.
+
+
+Перед тем как использовать `Identity` с MongoDB придется зачистить ненужное от `Identity` с EntityFramework Core
+в проекте `IdentityServer`:
+
+1. Удали `Data/ApplicationDbContext.cs`
+2. Удали папку `Migrations`
+3. В `Data/IdentityServerDataExtensions` удали вызов миграции для `ApplicationDbContext`, т.е. строчку
+`scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.Migrate();`
+4. Удали вызовы цепочки вызовов `services.AddDbContext` и `services.AddIdentity` из метода `ConfigureServices`
+в файле `Startup.cs`
+
+
+Теперь можно заняться `Identity` с MongoDB.
+
+
+Для начала подключи пакет `AspNetCore.Identity.Mongo` к проекту `IdentityServer`:
+```
+dotnet add package AspNetCore.Identity.Mongo
+```
+
+
+Создай файл `Models/ApplicationRole.cs` со следующим содержимым:
+```cs
+using AspNetCore.Identity.Mongo.Model;
+
+namespace IdentityServer.Models
+{
+    public class ApplicationRole : MongoRole<string>
+    {
+    }
+}
+```
+
+
+А файл `Models/ApplicationUser.cs` обнови так:
+```cs
+using AspNetCore.Identity.Mongo.Model;
+
+namespace IdentityServer.Models
+{
+    public class ApplicationUser : MongoUser<string>
+    {
+    }
+}
+```
+
+
+И теперь можно подключить `Identity` с MongoDB.
+Для этого в  методе `ConfigureServices` в файле `Startup.cs` добавь:
+
+```cs
+services.AddIdentityMongoDbProvider<ApplicationUser, ApplicationRole, string>(
+identity =>
+{
+    // NOTE: просто пример настройки
+    identity.Password.RequiredLength = 4;
+},
+mongo =>
+{
+    // NOTE: нужная строка подключения для твоего кластера
+    // Здесь используется адрес локального кластера по умолчанию
+    mongo.ConnectionString = "mongodb://127.0.0.1:27017/identity";
+})
+.AddDefaultTokenProviders();
+```
+
+
+Создание пользователей по умолчанию и UI в случае с MongoDB ничем не отличается от случая с EntityFramework Core,
+поэтому в соответствующем коде менять ничего не пришлось.
+
+
+Осталось только скачать и установить локальную MongoDB и можно проверять работоспособность `IdentityServer`.
+Ссылка, чтобы скачать с официального сайта: `https://www.mongodb.com/try/download/community`.
+
+
+### 12.R. Резюме
+
+Ты научился хранить данные о пользователях сервера авторизации в СУБД за счет подключения Identity.
+
+На этом работа над сервером авторизации не закончена. Его можно улучшать:
+
+- Расширить UI на основе UI из Identity
+- Более полно настроить Identity
+- Реализовать регистрацию пользователей с подтверждением email
+- Подключить внешних провайдеров, например, Google
+
+В общем, можно применить знания, полученные при настройке Identity в качестве
+встроенной в приложение аутентификации и авторизации.
