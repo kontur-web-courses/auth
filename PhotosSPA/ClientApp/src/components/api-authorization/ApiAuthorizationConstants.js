@@ -47,4 +47,7 @@ export const ApiAuthorizationClientConfiguration = {
   scope: "openid profile email photos",
   // опциональные настройки
   // https://github.com/IdentityModel/oidc-client-js/wiki#other-optional-settings
+  automaticSilentRenew: true, // Пытаться ли автоматически обновлять access token перед истечением срока его действия
+  accessTokenExpiringNotificationTime: 30, // За сколько секунд до истечения срока действия access token делать попытку его обновления
+  includeIdTokenInSilentRenew: true, // Включать ли id_token в качестве id_token_hint при вызовах silent renew
 };
