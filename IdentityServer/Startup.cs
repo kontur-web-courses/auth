@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
+using AspNetCore.Identity.Mongo;
 using IdentityServer.Data;
 using IdentityServer.Models;
 using IdentityServerHost.Quickstart.UI;
@@ -26,15 +27,22 @@ namespace IdentityServer
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlite("DataSource=app.db;Cache=Shared"));
-
-            services.AddIdentity<ApplicationUser, IdentityRole>()
-                .AddEntityFrameworkStores<ApplicationDbContext>()
-                .AddDefaultTokenProviders();
-
             // uncomment, if you want to add an MVC-based UI
             services.AddControllersWithViews();
+
+            services.AddIdentityMongoDbProvider<ApplicationUser, ApplicationRole, string>(
+                identity =>
+                {
+                    // NOTE: просто пример настройки
+                    identity.Password.RequiredLength = 4;
+                },
+                mongo =>
+                {
+                    // NOTE: нужная строка подключения для твоего кластера
+                    // Здесь используется адрес локального кластера по умолчанию
+                    mongo.ConnectionString = "mongodb://127.0.0.1:27017/identity";
+                })
+                .AddDefaultTokenProviders();
 
             var builder = services.AddIdentityServer()
                 .AddInMemoryIdentityResources(Config.Ids)
