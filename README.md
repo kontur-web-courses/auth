@@ -69,7 +69,7 @@
 
 *Scaffolding (англ. строительные леса) — генерация кода по заданной разработчиком спецификации.*
 
-Прежде всего потребуется установить новый инструмент для .NET Core CLI — генератор кода:
+Прежде всего потребуется установить новый инструмент для .NET CLI — генератор кода:
 ```
 dotnet tool install -g dotnet-aspnet-codegenerator
 ```
@@ -1190,7 +1190,7 @@ JWT-токен штука стандартная, но обычно переда
 как они сейчас хранятся в `PhotosApp`: информация в Sqlite, а файлы фотографий — в папке `.photos`.
 
 `IdentityServer` — это реализация сервера авторизации, причем реализация «по умолчанию».
-Дело в том, что для .NET Core есть хорошая реализация сервера авторизации с OAuth и OpenID Connect — `IdentityServer4`.
+Дело в том, что для .NET есть хорошая реализация сервера авторизации с OAuth и OpenID Connect — `IdentityServer4`.
 И, чтобы получить свой собственный сервер авторизации достаточно выполнить такие простые команды:
 ```
 dotnet new -i IdentityServer4.Templates
@@ -1206,7 +1206,8 @@ dotnet sln add IdentityServer\IdentityServer.csproj
 В перспективе этот сервер авторизации можно подключить к СУБД, добавить к нему UI, сконфигурировать так,
 как требуется. Хорошая архитектура с использованием Dependecy Inversion Principle,
 а также открытые исходные коды позволяют легко дополнять или переопределять функционал `IdentityServer`
-и делают его прекрасной основой для сервера авторизации на .NET Core.
+и делают его прекрасной основой для сервера авторизации на .NET.
+
 
 Задания будут сфокусированы на использовании сервера авторизации, а не на его настройке.
 Но если понадобится настроить, то можно использовать [документацию](https://identityserver4.readthedocs.io),
@@ -3407,7 +3408,7 @@ host.PrepareData();
 Данные готовы. Осталось подключить `Identity`, причем без UI.
 Так что надо использовать метод `AddIdentity`, а не `AddDefaultIdentity`.
 
-Для этого в методе `ConfigureServices` в `Startup.cs` добавь строчки:
+Для этого в методе `ConfigureServices` в `Startup.cs` перед цепочкой `services.AddIdentityServer` добавь строчки:
 ```cs
 services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
