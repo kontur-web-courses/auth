@@ -588,7 +588,7 @@ Claim, добавленные таким образом хранятся в от
 а затем сделай так, чтобы пользователю с `Paid == true` выставлялся claim `subscription` со значением `paid`.
 5. Зарегистрируй фабрику в `IdentityHostingStartup.cs` в конфигурации `Identity`,
 добавив для этого вызов `.AddClaimsPrincipalFactory<CustomClaimsPrincipalFactory>()`
-в цепочку вызовов после `.AddDefaultIdentity<PhotosAppUser>()`.
+в цепочку вызовов после `.AddRoles<IdentityRole>()`.
 
 Убедись, что пользователю `cristina` доступно добавление фото, а для `vicky` не доступно.
 
