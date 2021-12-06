@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PhotosApp.Data;
@@ -11,6 +13,7 @@ using PhotosApp.Models;
 
 namespace PhotosApp.Controllers
 {
+    [Authorize]
     public class PhotosController : Controller
     {
         private readonly IPhotosRepository photosRepository;
@@ -21,7 +24,8 @@ namespace PhotosApp.Controllers
             this.photosRepository = photosRepository;
             this.mapper = mapper;
         }
-
+        
+        [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
             var ownerId = GetOwnerId();
@@ -53,13 +57,15 @@ namespace PhotosApp.Controllers
 
             return File(photoContent.Content, photoContent.ContentType, photoContent.FileName);
         }
-
+        
+        [Authorize(Policy = "CanAddPhoto")]
         public IActionResult AddPhoto()
         {
             return View();
         }
 
         [HttpPost]
+        [Authorize(Policy = "CanAddPhoto")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddPhoto(AddPhotoModel addPhotoModel)
         {
@@ -88,7 +94,8 @@ namespace PhotosApp.Controllers
 
             return RedirectToAction("Index");
         }
-
+        
+        [Authorize(Policy = "Beta")]
         public async Task<IActionResult> EditPhoto(Guid id)
         {
             var photo = await photosRepository.GetPhotoMetaAsync(id);
@@ -104,6 +111,7 @@ namespace PhotosApp.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "Beta")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditPhoto(EditPhotoModel editPhotoModel)
         {
@@ -137,7 +145,7 @@ namespace PhotosApp.Controllers
 
         private string GetOwnerId()
         {
-            return "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd";
+            return User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
     }
 }
