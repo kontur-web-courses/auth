@@ -1,4 +1,5 @@
 using System;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI;
@@ -48,6 +49,19 @@ namespace PhotosApp.Areas.Identity
                     options.SignIn.RequireConfirmedEmail = false;
                     options.SignIn.RequireConfirmedPhoneNumber = false;
                     options.SignIn.RequireConfirmedAccount = false;
+                });
+                
+                services.ConfigureApplicationCookie(options =>
+                {
+                    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+                    options.Cookie.Name = "PhotosApp.Auth";
+                    options.Cookie.HttpOnly = true;
+                    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+                    options.LoginPath = "/Identity/Account/Login";
+                    // ReturnUrlParameter requires 
+                    //using Microsoft.AspNetCore.Authentication.Cookies;
+                    options.ReturnUrlParameter = CookieAuthenticationDefaults.ReturnUrlParameter;
+                    options.SlidingExpiration = true;
                 });
             });
         }
