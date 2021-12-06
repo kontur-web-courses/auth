@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PhotosApp.Data;
@@ -11,17 +13,19 @@ using PhotosApp.Models;
 
 namespace PhotosApp.Controllers
 {
+    [Authorize]
     public class PhotosController : Controller
     {
         private readonly IPhotosRepository photosRepository;
         private readonly IMapper mapper;
-
+        
         public PhotosController(IPhotosRepository photosRepository, IMapper mapper)
         {
             this.photosRepository = photosRepository;
             this.mapper = mapper;
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
             var ownerId = GetOwnerId();
@@ -137,7 +141,7 @@ namespace PhotosApp.Controllers
 
         private string GetOwnerId()
         {
-            return "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd";
+            return User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
     }
 }
