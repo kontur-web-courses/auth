@@ -2,6 +2,8 @@
 @{
     ViewData["Title"] = "Все фото";
 }
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
 
 <div class="container">
     @if (Model.Photos.Any())
@@ -28,7 +30,10 @@
             @if (User.Identity.IsAuthenticated)
             {
                 <text>Ничего не найдено...</text>
-                <text>&nbsp;<a asp-controller="Photos" asp-action="AddPhoto">Загрузите</a>&nbsp; свои фото</text>
+                if ((await AuthorizationService.AuthorizeAsync(User, "CanAddPhoto")).Succeeded)
+                {
+                    <text>&nbsp;<a asp-controller="Photos" asp-action="AddPhoto">Загрузите</a>&nbsp; свои фото</text>
+                }
             }
             else
             {

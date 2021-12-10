@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Microsoft.AspNetCore.Routing;
 using PhotosApp.Data;
 
@@ -37,8 +38,23 @@ namespace PhotosApp.Services.Authorization
 
             // NOTE: Этот метод получает информацию о фотографии, в том числе о владельце
             // await photosRepository.GetPhotoMetaAsync(...)
+            
+            var photoId = routeData.Values["id"]?.ToString();
+            if (Guid.TryParse(photoId, out var guid))
+            {
+                var photoMeta = await photosRepository.GetPhotoMetaAsync(guid);
+                if (userId == photoMeta.OwnerId)
+                {
+                    context.Succeed(requirement);
+                    return;
+                }
+            }
+            else
+            {
+                Console.WriteLine("!");
+            }
 
-            throw new NotImplementedException();
+            context.Fail();
         }
     }
 }
