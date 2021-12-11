@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -9,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 using PhotosApp.Clients;
 using PhotosApp.Clients.Models;
 using PhotosApp.Data;
@@ -50,8 +54,8 @@ namespace PhotosApp
             //services.AddDbContext<PhotosDbContext>(o =>
             //    o.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=PhotosApp;Trusted_Connection=True;"));
 
-            services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
-            // services.AddScoped<IPhotosRepository, RemotePhotosRepository>();
+            // services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
+            services.AddScoped<IPhotosRepository, RemotePhotosRepository>();
 
             services.AddAutoMapper(cfg =>
             {
@@ -67,11 +71,18 @@ namespace PhotosApp
             services.AddTransient<ICookieManager, ChunkingCookieManager>();
             
             //
+            const string oidcAuthority = "https://localhost:7001";
+            var oidcConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+                $"{oidcAuthority}/.well-known/openid-configuration",
+                new OpenIdConnectConfigurationRetriever(),
+                new HttpDocumentRetriever());
+            services.AddSingleton<IConfigurationManager<OpenIdConnectConfiguration>>(oidcConfigurationManager);
             
             services.AddAuthentication()
                 .AddOpenIdConnect("Passport", "Паспорт", options =>
                 {
-                    options.Authority = "https://localhost:7001";
+                    options.ConfigurationManager = oidcConfigurationManager;
+                    options.Authority = oidcAuthority;
 
                     options.ClientId = "Photos App by OIDC";
                     options.ClientSecret = "secret";
@@ -80,6 +91,8 @@ namespace PhotosApp
                     // NOTE: oidc и profile уже добавлены по умолчанию
                     options.Scope.Add("email");
                     options.Scope.Add("photos_app");
+                    options.Scope.Add("photos");
+                    options.Scope.Add("offline_access");
 
                     options.CallbackPath = "/signin-passport";
 
@@ -94,6 +107,32 @@ namespace PhotosApp
 
                     options.Events = new OpenIdConnectEvents
                     {
+                        OnTokenResponseReceived = context =>
+                        {
+                            var tokenResonse = context.TokenEndpointResponse;
+                            var tokenHandler = new JwtSecurityTokenHandler();
+
+                            SecurityToken accessToken = null;
+                            if (tokenResonse.AccessToken != null)
+                            {
+                                accessToken = tokenHandler.ReadToken(tokenResonse.AccessToken);
+                            }
+
+                            SecurityToken idToken = null;
+                            if (tokenResonse.IdToken != null)
+                            {
+                                idToken = tokenHandler.ReadToken(tokenResonse.IdToken);
+                            }
+
+                            string refreshToken = null;
+                            if (tokenResonse.RefreshToken != null)
+                            {
+                                // NOTE: Это не JWT-токен
+                                refreshToken = tokenResonse.RefreshToken;
+                            }
+                            
+                            return Task.CompletedTask;
+                        },
                         OnRemoteFailure = context =>
                         {
                             context.Response.Redirect("/");

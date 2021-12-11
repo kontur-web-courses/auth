@@ -31,7 +31,8 @@ namespace IdentityServer
                 },
                 new ApiResource("photos_service", "Сервис фотографий")
                 {
-                    Scopes = { "photos" }
+                    Scopes = { "photos" },
+                    ApiSecrets = { new Secret("photos_service_secret".Sha256()) }
                 }
             };
 
@@ -79,7 +80,7 @@ namespace IdentityServer
                     AllowedGrantTypes = GrantTypes.Code,
         
                     // NOTE: показывать ли пользователю страницу consent со списком запрошенных разрешений
-                    RequireConsent = false,
+                    RequireConsent = true,
 
                     // NOTE: куда отправлять после логина
                     RedirectUris = { "https://localhost:5001/signin-passport" },
@@ -92,7 +93,8 @@ namespace IdentityServer
                         IdentityServerConstants.StandardScopes.Profile,
                         // NOTE: Позволяет запрашивать email пользователя через id token
                         IdentityServerConstants.StandardScopes.Email,
-                        "photos_app"
+                        "photos_app",
+                        "photos"
                     },
 
                     // NOTE: Надо ли добавлять информацию о пользователе в id token при запросе одновременно
@@ -101,6 +103,9 @@ namespace IdentityServer
                     AlwaysIncludeUserClaimsInIdToken = true,
                     
                     PostLogoutRedirectUris = { "https://localhost:5001/signout-callback-passport" },
+                    
+                    AccessTokenLifetime = 30,
+                    AllowOfflineAccess = true,
                 }
             };
     }
