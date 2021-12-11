@@ -15,7 +15,11 @@ namespace IdentityServer
             { 
                 new IdentityResources.OpenId(),
                 new IdentityResources.Profile(),
-                new IdentityResources.Email()
+                new IdentityResources.Email(),
+                new IdentityResource("photos_app", "Web Photos", new []
+                {
+                    "role", "subscription", "testing"
+                })
             };
 
         public static IEnumerable<ApiResource> Apis =>
@@ -87,13 +91,16 @@ namespace IdentityServer
                         // NOTE: Позволяет запрашивать профиль пользователя через id token
                         IdentityServerConstants.StandardScopes.Profile,
                         // NOTE: Позволяет запрашивать email пользователя через id token
-                        IdentityServerConstants.StandardScopes.Email
+                        IdentityServerConstants.StandardScopes.Email,
+                        "photos_app"
                     },
 
                     // NOTE: Надо ли добавлять информацию о пользователе в id token при запросе одновременно
                     // id token и access token, как это происходит в code flow.
                     // Либо придется ее получать отдельно через user info endpoint.
                     AlwaysIncludeUserClaimsInIdToken = true,
+                    
+                    PostLogoutRedirectUris = { "https://localhost:5001/signout-callback-passport" },
                 }
             };
     }

@@ -1,5 +1,8 @@
-﻿using AutoMapper;
+﻿using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +13,7 @@ using PhotosApp.Clients;
 using PhotosApp.Clients.Models;
 using PhotosApp.Data;
 using PhotosApp.Models;
+using PhotosApp.Services.Authorization;
 using Serilog;
 
 namespace PhotosApp
@@ -61,6 +65,105 @@ namespace PhotosApp
             }, new System.Reflection.Assembly[0]);
 
             services.AddTransient<ICookieManager, ChunkingCookieManager>();
+            
+            //
+            
+            services.AddAuthentication()
+                .AddOpenIdConnect("Passport", "Паспорт", options =>
+                {
+                    options.Authority = "https://localhost:7001";
+
+                    options.ClientId = "Photos App by OIDC";
+                    options.ClientSecret = "secret";
+                    options.ResponseType = "code";
+
+                    // NOTE: oidc и profile уже добавлены по умолчанию
+                    options.Scope.Add("email");
+                    options.Scope.Add("photos_app");
+
+                    options.CallbackPath = "/signin-passport";
+
+                    // NOTE: все эти проверки токена выполняются по умолчанию, указаны для ознакомления
+                    options.TokenValidationParameters.ValidateIssuer = true; // проверка издателя
+                    options.TokenValidationParameters.ValidateAudience = true; // проверка получателя
+                    options.TokenValidationParameters.ValidateLifetime = true; // проверка не протух ли
+                    options.TokenValidationParameters.RequireSignedTokens = true; // есть ли валидная подпись издателя
+                    
+                    options.SignedOutCallbackPath = "/signout-callback-passport";
+                    options.SaveTokens = true;
+
+                    options.Events = new OpenIdConnectEvents
+                    {
+                        OnRemoteFailure = context =>
+                        {
+                            context.Response.Redirect("/");
+                            context.HandleResponse();
+                            return Task.CompletedTask;
+                        }
+                    };
+                });
+            
+            services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
+
+            services.AddAuthorization(options =>
+            {
+                // options.DefaultPolicy = new AuthorizationPolicyBuilder(
+                //         JwtBearerDefaults.AuthenticationScheme,
+                //         IdentityConstants.ApplicationScheme)
+                //     .RequireAuthenticatedUser()
+                //     .Build();
+                options.DefaultPolicy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+                    
+                options.AddPolicy("Dev", policyBuilder =>
+                {
+                    policyBuilder.RequireAuthenticatedUser();
+                    // policyBuilder.RequireRole("Dev");
+                    // policyBuilder.AddAuthenticationSchemes(
+                    //     JwtBearerDefaults.AuthenticationScheme,
+                    //     IdentityConstants.ApplicationScheme);
+                });
+                        
+                    
+                options.AddPolicy(
+                    "Beta", policyBuilder =>
+                    {
+                        policyBuilder.RequireAuthenticatedUser();
+                        policyBuilder.RequireClaim("testing", "beta");
+                    });
+                options.AddPolicy(
+                    "CanAddPhoto", policyBuilder =>
+                    {
+                        policyBuilder.RequireAuthenticatedUser();
+                        policyBuilder.RequireClaim("subscription", "paid");
+                    });
+                options.AddPolicy(
+                    "MustOwnPhoto", policyBuilder =>
+                    {
+                        policyBuilder.RequireAuthenticatedUser();
+                        policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
+                    });
+            });
+            
+            services.AddAuthentication(options =>
+                {
+                    // NOTE: Схема, которую внешние провайдеры будут использовать для сохранения данных о пользователе
+                    // NOTE: Так как значение совпадает с DefaultScheme, то эту настройку можно не задавать
+                    options.DefaultSignInScheme = "Cookie";
+                    // NOTE: Схема, которая будет вызываться, если у пользователя нет доступа
+                    options.DefaultChallengeScheme = "Passport";
+                    // NOTE: Схема на все остальные случаи жизни
+                    options.DefaultScheme = "Cookie";
+                })
+                .AddCookie("Cookie", options =>
+                {
+                    // NOTE: Пусть у куки будет имя, которое расшифровывается на странице «Decode»
+                    options.Cookie.Name = "PhotosApp.Auth";
+                    // NOTE: Если не задать здесь путь до обработчика logout, то в этом обработчике
+                    // будет игнорироваться редирект по настройке AuthenticationProperties.RedirectUri
+                    options.LogoutPath = "/Passport/Logout";
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -84,7 +187,7 @@ namespace PhotosApp
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute("default", "{controller=Photos}/{action=Index}/{id?}");
-                endpoints.MapRazorPages();
+                // endpoints.MapRazorPages();
             });
         }
     }
