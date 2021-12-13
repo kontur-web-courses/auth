@@ -1,5 +1,6 @@
 using System;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Services;
+using PhotosApp.Services.Authorization;
 using PhotosApp.Services.TicketStores;
 
 [assembly: HostingStartup(typeof(PhotosApp.Areas.Identity.IdentityHostingStartup))]
@@ -28,6 +30,7 @@ namespace PhotosApp.Areas.Identity
                 
                 services.AddDefaultIdentity<PhotosAppUser>()
                     .AddRoles<IdentityRole>()
+                    .AddClaimsPrincipalFactory<CustomClaimsPrincipalFactory>()
                     .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>()
                     .AddErrorDescriber<RussianIdentityErrorDescriber>()
                     .AddEntityFrameworkStores<UsersDbContext>();
@@ -38,6 +41,7 @@ namespace PhotosApp.Areas.Identity
                     options.IterationCount = 12000;
                 });
                 services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAppUser>>();
+                services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
                 
                 services.Configure<IdentityOptions>(options =>
                 {
@@ -89,6 +93,14 @@ namespace PhotosApp.Areas.Identity
                         {
                             policyBuilder.RequireAuthenticatedUser();
                             policyBuilder.RequireClaim("subscription", "paid");
+                        });
+                    
+                    options.AddPolicy(
+                        "MustOwnPhoto",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
                         });
                 });
             });

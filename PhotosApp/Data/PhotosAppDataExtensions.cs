@@ -36,7 +36,7 @@ namespace PhotosApp.Data
 
                         
                         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>();
-                        userManager.SeedWithSampleUsersAsync().Wait();
+                        userManager.SeedWithSampleUsersAsync<PhotosAppUser>().Wait();
                         
                         var ticketsDbContext = scope.ServiceProvider.GetRequiredService<TicketsDbContext>();
                         ticketsDbContext.SeedWithSampleTicketsAsync().Wait();
@@ -155,7 +155,7 @@ namespace PhotosApp.Data
         }
 
         private static async Task SeedWithSampleUsersAsync<TUser>(this UserManager<TUser> userManager)
-            where TUser : IdentityUser, new()
+            where TUser : PhotosAppUser, new()
         {
             // NOTE: ToList важен, так как при удалении пользователя меняется список пользователей
             foreach (var user in userManager.Users.ToList())
@@ -177,7 +177,8 @@ namespace PhotosApp.Data
                 {
                     Id = "dcaec9ce-91c9-4105-8d4d-eee3365acd82",
                     UserName = "cristina@gmail.com",
-                    Email = "cristina@gmail.com"
+                    Email = "cristina@gmail.com",
+                    Paid = true,
                 };
                 await userManager.RegisterUserIfNotExists(user, "Pass!2");
             }
