@@ -27,6 +27,7 @@ namespace PhotosApp.Areas.Identity
                         context.Configuration.GetConnectionString("TicketsDbContextConnection")));
                 
                 services.AddDefaultIdentity<PhotosAppUser>()
+                    .AddRoles<IdentityRole>()
                     .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>()
                     .AddErrorDescriber<RussianIdentityErrorDescriber>()
                     .AddEntityFrameworkStores<UsersDbContext>();
@@ -70,6 +71,25 @@ namespace PhotosApp.Areas.Identity
                     //using Microsoft.AspNetCore.Authentication.Cookies;
                     options.ReturnUrlParameter = CookieAuthenticationDefaults.ReturnUrlParameter;
                     options.SlidingExpiration = true;
+                });
+                
+                services.AddAuthorization(options =>
+                {
+                    options.AddPolicy(
+                        "Beta",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireClaim("testing", "beta");
+                        });
+                    
+                    options.AddPolicy(
+                        "CanAddPhoto",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireClaim("subscription", "paid");
+                        });
                 });
             });
         }
