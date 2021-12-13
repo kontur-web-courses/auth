@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Services;
+using PhotosApp.Services.TicketStores;
 
 [assembly: HostingStartup(typeof(PhotosApp.Areas.Identity.IdentityHostingStartup))]
 namespace PhotosApp.Areas.Identity
@@ -20,6 +21,10 @@ namespace PhotosApp.Areas.Identity
                 services.AddDbContext<UsersDbContext>(options =>
                     options.UseSqlite(
                         context.Configuration.GetConnectionString("UsersDbContextConnection")));
+                
+                services.AddDbContext<TicketsDbContext>(options =>
+                    options.UseSqlite(
+                        context.Configuration.GetConnectionString("TicketsDbContextConnection")));
                 
                 services.AddDefaultIdentity<PhotosAppUser>()
                     .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>()
@@ -51,8 +56,11 @@ namespace PhotosApp.Areas.Identity
                     options.SignIn.RequireConfirmedAccount = false;
                 });
                 
+                services.AddTransient<EntityTicketStore>();
                 services.ConfigureApplicationCookie(options =>
                 {
+                    var serviceProvider = services.BuildServiceProvider();
+                    options.SessionStore = serviceProvider.GetRequiredService<EntityTicketStore>();
                     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
                     options.Cookie.Name = "PhotosApp.Auth";
                     options.Cookie.HttpOnly = true;
