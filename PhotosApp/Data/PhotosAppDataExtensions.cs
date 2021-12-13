@@ -39,8 +39,6 @@ namespace PhotosApp.Data
 
                         var ticketsDbContext = scope.ServiceProvider.GetRequiredService<TicketsDbContext>();
                         ticketsDbContext.SeedWithSampleTicketsAsync().Wait();
-                        
-                        
                     }
                 }
                 catch (Exception e)

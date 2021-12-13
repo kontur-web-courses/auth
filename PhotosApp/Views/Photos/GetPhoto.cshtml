@@ -1,4 +1,6 @@
 ﻿@model GetPhotoModel
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
 @{
     ViewData["Title"] = "Фото";
 }

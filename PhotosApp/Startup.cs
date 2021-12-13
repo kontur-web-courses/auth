@@ -37,7 +37,7 @@ namespace PhotosApp
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<PhotosServiceOptions>(configuration.GetSection("PhotosService"));
-
+    
             var mvc = services.AddControllersWithViews();
             services.AddRazorPages();
             if (env.IsDevelopment())

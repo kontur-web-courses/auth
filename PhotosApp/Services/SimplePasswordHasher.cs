@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Identity;
 using NUnit.Framework;
@@ -16,6 +17,14 @@ namespace PhotosApp.Services
         public string HashPassword(TUser user, string password)
         {
             byte[] saltBytes = GenerateSaltBytes();
+            byte[] hashBytes = GetHashBytes(password, saltBytes);
+            byte[] hashedPasswordBytes = ConcatenateBytes(saltBytes, hashBytes);
+            string hashedPassword = Convert.ToBase64String(hashedPasswordBytes);
+            return hashedPassword;
+        }
+        
+        public string HashPasswordWithSpecifiedSalt(byte[] saltBytes, string password)
+        {
             byte[] hashBytes = GetHashBytes(password, saltBytes);
             byte[] hashedPasswordBytes = ConcatenateBytes(saltBytes, hashBytes);
             string hashedPassword = Convert.ToBase64String(hashedPasswordBytes);
@@ -96,6 +105,7 @@ namespace PhotosApp.Services
                 areSame &= (a[i] == b[i]);
             return areSame;
         }
+        
     }
 
     [TestFixture]

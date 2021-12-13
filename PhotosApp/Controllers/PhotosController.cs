@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PhotosApp.Data;
+using PhotosApp.Migrations.UsersDb;
 using PhotosApp.Models;
 
 namespace PhotosApp.Controllers
@@ -37,6 +38,7 @@ namespace PhotosApp.Controllers
         }
 
         // [Authorize(Policy = "MustOwnPhoto")]
+
         public async Task<IActionResult> GetPhoto(Guid id)
         {
             var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
@@ -51,6 +53,7 @@ namespace PhotosApp.Controllers
 
         [HttpGet("photos/{id}")]
         // [Authorize(Policy = "MustOwnPhoto")]
+
         public async Task<IActionResult> GetPhotoFile(Guid id)
         {
             var photoContent = await photosRepository.GetPhotoContentAsync(id);
@@ -61,12 +64,13 @@ namespace PhotosApp.Controllers
         }
 
         [HttpGet("Photos/AddPhoto")]
+        // [Authorize(Policy = "CanAddPhoto")]
         public IActionResult AddPhoto()
         {
             return View();
         }
 
-        [HttpPost]
+        [HttpPost("Photos/AddPhoto")]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "CanAddPhoto")]
         public async Task<IActionResult> AddPhoto(AddPhotoModel addPhotoModel)
@@ -99,6 +103,7 @@ namespace PhotosApp.Controllers
 
         [Authorize(Policy = "Beta")]
         // [Authorize(Policy = "MustOwnPhoto")]
+
         public async Task<IActionResult> EditPhoto(Guid id)
         {
             var photo = await photosRepository.GetPhotoMetaAsync(id);
