@@ -68,7 +68,8 @@ export class Photos extends Component {
           <li>
             <b>Файл:</b> <span>{photo.fileName}</span>
           </li>
-          <span>{photo.url}</span>
+          {/*<span>{photo.url}</span>*/}
+          <img src={photo.url} className={"photo"}/>
         </ul>
       </div>
     );

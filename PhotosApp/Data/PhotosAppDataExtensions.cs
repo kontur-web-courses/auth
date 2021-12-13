@@ -25,19 +25,18 @@ namespace PhotosApp.Data
                     if (env.IsDevelopment())
                     {
                         scope.ServiceProvider.GetRequiredService<PhotosDbContext>().Database.Migrate();
-                        scope.ServiceProvider.GetRequiredService<UsersDbContext>().Database.Migrate();
-                        scope.ServiceProvider.GetRequiredService<TicketsDbContext>().Database.Migrate();
+                        // scope.ServiceProvider.GetRequiredService<UsersDbContext>().Database.Migrate();
+                        // scope.ServiceProvider.GetRequiredService<TicketsDbContext>().Database.Migrate();
                         
                         var photosDbContext = scope.ServiceProvider.GetRequiredService<PhotosDbContext>();
                         photosDbContext.SeedWithSamplePhotosAsync().Wait();
 
-                        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-                        roleManager.SeedWithSampleRolesAsync().Wait();
+                        // var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                        // roleManager.SeedWithSampleRolesAsync().Wait();
+                        //
+                        // var userManager = scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>();
+                        // userManager.SeedWithSampleUsersAsync<PhotosAppUser>().Wait();
 
-                        
-                        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>();
-                        userManager.SeedWithSampleUsersAsync<PhotosAppUser>().Wait();
-                        
                         var ticketsDbContext = scope.ServiceProvider.GetRequiredService<TicketsDbContext>();
                         ticketsDbContext.SeedWithSampleTicketsAsync().Wait();
                     }
@@ -154,15 +153,15 @@ namespace PhotosApp.Data
             await dbContext.SaveChangesAsync();
         }
 
-        private static async Task SeedWithSampleUsersAsync<TUser>(this UserManager<TUser> userManager)
-            where TUser : PhotosAppUser, new()
+        private static async Task SeedWithSampleUsersAsync<TUser>(this UserManager<PhotosAppUser> userManager)
+            where TUser : IdentityUser, new()
         {
             // NOTE: ToList важен, так как при удалении пользователя меняется список пользователей
             foreach (var user in userManager.Users.ToList())
                 await userManager.DeleteAsync(user);
 
             {
-                var user = new TUser
+                var user = new PhotosAppUser
                 {
                     Id = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd",
                     UserName = "vicky@gmail.com",
@@ -173,7 +172,7 @@ namespace PhotosApp.Data
             }
 
             {
-                var user = new TUser
+                var user = new PhotosAppUser
                 {
                     Id = "dcaec9ce-91c9-4105-8d4d-eee3365acd82",
                     UserName = "cristina@gmail.com",
@@ -184,7 +183,7 @@ namespace PhotosApp.Data
             }
 
             {
-                var user = new TUser
+                var user = new PhotosAppUser
                 {
                     Id = "b9991f69-b4c1-477d-9432-2f7cf6099e02",
                     UserName = "dev@gmail.com",

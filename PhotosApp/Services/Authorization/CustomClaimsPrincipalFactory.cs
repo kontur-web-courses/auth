@@ -30,7 +30,7 @@ namespace PhotosApp.Services.Authorization
             {
                 claimsIdentity.AddClaims(new[]
                 {
-                    new Claim("subscription", "paid"),
+                    new Claim("subscription", "paid")
                 });
             }
 

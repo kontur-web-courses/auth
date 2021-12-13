@@ -31,6 +31,14 @@ namespace PhotosApp.Services
             return hashedPassword;
         }
 
+        public string HashPasswordWithSpecifiedSalt(byte[] saltBytes, string password)
+        {
+            byte[] hashBytes = GetHashBytes(password, saltBytes);
+            byte[] hashedPasswordBytes = ConcatenateBytes(saltBytes, hashBytes);
+            string hashedPassword = Convert.ToBase64String(hashedPasswordBytes);
+            return hashedPassword;
+        }
+
         public PasswordVerificationResult VerifyHashedPassword(TUser user,
             string hashedPassword, string providedPassword)
         {
