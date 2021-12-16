@@ -46,7 +46,7 @@ namespace PhotosApp.Areas.Identity.Pages.Account
 
         public class InputModel
         {
-            [Required(ErrorMessage = "¬ведите email")]
+            [Required(ErrorMessage = "Enter email")]
             [EmailAddress]
             [Display(Name = "Email")]
             public string Email { get; set; }
