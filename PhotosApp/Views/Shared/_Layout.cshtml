@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -13,7 +15,7 @@
               asp-fallback-href="~/lib/bootstrap/dist/css/bootstrap.min.css"
               asp-fallback-test-class="sr-only" asp-fallback-test-property="position" asp-fallback-test-value="absolute"
               crossorigin="anonymous"
-              integrity="sha256-eSi1q2PG6J7g7ib17yAaWMcrr5GrtohYChqibrV7PBE="/>
+              integrity="sha256-eSi1q2PG6J7g7ib17yAaWMcrr5GrtohYChqibrV7PBE=" />
     </environment>
     <link rel="stylesheet" href="~/css/site.css" />
 </head>
@@ -30,9 +32,11 @@
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="Photos" asp-action="Index">Все фото</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Photos" asp-action="AddPhoto">Добавить фото</a>
-                        </li>
+                        @if((await AuthorizationService.AuthorizeAsync(User, "CanAddPhoto")).Succeeded){
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Photos" asp-action="AddPhoto">Добавить фото</a>
+                            </li>
+                        }
                         @if (User.IsInRole("Dev"))
                         {
                             <li class="nav-item">
@@ -45,7 +49,7 @@
             </div>
         </nav>
     </header>
-    
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
