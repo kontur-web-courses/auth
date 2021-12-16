@@ -27,6 +27,9 @@ namespace PhotosApp.Data
                         scope.ServiceProvider.GetRequiredService<UsersDbContext>().Database.Migrate();
                         scope.ServiceProvider.GetRequiredService<TicketsDbContext>().Database.Migrate();
 
+                        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                        roleManager.SeedWithSampleRolesAsync().Wait();
+
                         var photosDbContext = scope.ServiceProvider.GetRequiredService<PhotosDbContext>();
                         photosDbContext.SeedWithSamplePhotosAsync().Wait();
 
@@ -155,7 +158,6 @@ namespace PhotosApp.Data
             // NOTE: ToList важен, так как при удалении пользователя меняется список пользователей
             foreach (var user in userManager.Users.ToList())
                 await userManager.DeleteAsync(user);
-
             {
                 var user = new TUser
                 {
@@ -184,7 +186,10 @@ namespace PhotosApp.Data
                     Email = "dev@gmail.com"
                 };
                 await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                await userManager.AddToRoleAsync(user, "Dev");
             }
+
+
         }
 
         private static async Task RegisterUserIfNotExists<TUser>(this UserManager<TUser> userManager,
