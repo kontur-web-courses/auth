@@ -128,7 +128,22 @@ namespace PhotosApp.Areas.Identity
                     {
                         options.ClientId = context.Configuration["Authentication:Google:ClientId"];
                         options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
-                    });
+                    })
+                    .AddOpenIdConnect(
+                        authenticationScheme: "Google",
+                        displayName: "Google",
+                        options =>
+                        {
+                            options.Authority = "https://accounts.google.com/";
+                            options.ClientId = context.Configuration["Authentication:Google:ClientId"];
+                            options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
+
+                            options.CallbackPath = "/signin-google";
+                            options.SignedOutCallbackPath = "/signout-callback-google";
+                            options.RemoteSignOutPath = "/signout-google";
+
+                            options.Scope.Add("email");
+                        }); ;
 
                 services.AddTransient<IEmailSender, SimpleEmailSender>(serviceProvider =>
                     new SimpleEmailSender(
