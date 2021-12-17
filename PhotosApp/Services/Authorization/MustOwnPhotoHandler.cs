@@ -30,8 +30,8 @@ namespace PhotosApp.Services.Authorization
             var routeData = httpContext?.GetRouteData();
 
             var photoId = routeData?.Values["id"]?.ToString();
-            var realUserInfo = await photosRepository.GetPhotoMetaAsync(Guid.Parse(photoId));
-            if (realUserInfo.OwnerId == userId)
+            var photoEntity = await photosRepository.GetPhotoMetaAsync(Guid.Parse(photoId));
+            if (photoEntity.OwnerId == userId)
                 context.Succeed(requirement);
             else
                 context.Fail();
