@@ -126,6 +126,7 @@ namespace IdentityServer
 
                     // NOTE: refresh token точно не будет использоваться
                     AllowOfflineAccess = false,
+                    AccessTokenLifetime = 2*60,
                 }
             };
     }
