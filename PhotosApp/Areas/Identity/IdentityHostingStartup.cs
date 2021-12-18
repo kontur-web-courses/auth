@@ -124,11 +124,11 @@ namespace PhotosApp.Areas.Identity
                 });
 
                 services.AddAuthentication()
-                    .AddGoogle("Google", options =>
-                    {
-                        options.ClientId = context.Configuration["Authentication:Google:ClientId"];
-                        options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
-                    })
+                    //.AddGoogle("Google", options =>
+                    //{
+                    //    options.ClientId = context.Configuration["Authentication:Google:ClientId"];
+                    //    options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
+                    //})
                     .AddOpenIdConnect(
                         authenticationScheme: "Google",
                         displayName: "Google",
