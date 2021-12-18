@@ -1,4 +1,6 @@
+using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Serialization;
 using PhotosService.Data;
 using PhotosService.Models;
+using PhotosService.Services;
 using Serilog;
 
 namespace PhotosService
@@ -26,9 +29,14 @@ namespace PhotosService
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers(options =>
-            {
-                options.ReturnHttpNotAcceptable = true;
-            })
+                {
+                    services.AddControllers(options =>
+                    {
+                        options.ReturnHttpNotAcceptable = true;
+                        // NOTE: Существенно, что новый провайдер добавляется в начало списка перед провайдером по умолчанию
+                        options.ModelBinderProviders.Insert(0, new JwtSecurityTokenModelBinderProvider());
+                    });
+                })
             .AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
@@ -50,6 +58,15 @@ namespace PhotosService
                 {
                     options.Authority = "https://localhost:7001";
                     options.Audience = "photos_service";
+
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnTokenValidated = context =>
+                        {
+                            JwtSecurityTokenModelBinder.SaveToken(context.HttpContext, context.SecurityToken);
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
         }
 
