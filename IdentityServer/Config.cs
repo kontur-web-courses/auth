@@ -27,7 +27,8 @@ namespace IdentityServer
             {
                 new ApiResource("photos_service", "Сервис фотографий")
                 {
-                    Scopes = { "photos" }
+                    Scopes = { "photos" },
+                    ApiSecrets = { new Secret("photos_service_secret".Sha256()) }
                 }
             };
 
