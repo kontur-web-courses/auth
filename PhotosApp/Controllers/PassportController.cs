@@ -23,7 +23,7 @@ namespace PhotosApp.Controllers
             return SignOut(new AuthenticationProperties
             {
                 RedirectUri = "/"
-            });
+            }, "Cookie", "Passport");
         }
     }
 }

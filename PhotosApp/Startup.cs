@@ -77,6 +77,9 @@ namespace PhotosApp
                     options.Scope.Add("email");
 
                     options.CallbackPath = "/signin-passport";
+                    options.SignedOutCallbackPath = "/signout-callback-passport";
+
+                    options.SaveTokens = true;
 
                     // NOTE: все эти проверки токена выполняются по умолчанию, указаны для ознакомления
                     options.TokenValidationParameters.ValidateIssuer = true; // проверка издателя
