@@ -23,24 +23,25 @@ namespace PhotosApp.Services.Authorization
             AuthorizationHandlerContext context, MustOwnPhotoRequirement requirement)
         {
             var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var httpContext = httpContextAccessor.HttpContext;            
-            var routeData = httpContext?.GetRouteData();            
-            var photoId = routeData?.Values["id"];
+            var httpContext = httpContextAccessor.HttpContext;
+            var routeData = httpContext?.GetRouteData();
+            var photoId = routeData?.Values["id"].ToString();
 
-            if (photoId is null)
+            if (!Guid.TryParse(photoId, out var photoIdGuid))
             {
                 context.Fail();
+                return;
             }
-            else
+
+            var photoMeta = await photosRepository.GetPhotoMetaAsync(photoIdGuid);
+            
+            if (photoMeta.OwnerId == userId)
             {
-                var photoMeta = await photosRepository.GetPhotoMetaAsync(Guid.Parse(photoId.ToString()));
-                if (photoMeta.OwnerId == userId)
-                    context.Succeed(requirement);
-                else
-                    context.Fail();
+                context.Succeed(requirement);
+                return;
             }
-            // NOTE: Этот метод получает информацию о фотографии, в том числе о владельце
-            // await photosRepository.GetPhotoMetaAsync(...)
+            
+            context.Fail();
         }
     }
 }

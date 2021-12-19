@@ -28,6 +28,7 @@ namespace PhotosApp.Services.Authorization
             {
                 new Claim("subscription", "paid")
             });
+            
             return principal;
         }
     }

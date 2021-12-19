@@ -63,7 +63,7 @@ namespace IdentityServerHost.Quickstart.UI
                     {
                         SubjectId = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd",
                         Username = "vicky@gmail.com",
-                        Password = "Pass!2",
+                        Password = "qwe123",
                         Claims =
                         {
                             new Claim(JwtClaimTypes.Name, "vicky@gmail.com"),
@@ -75,7 +75,7 @@ namespace IdentityServerHost.Quickstart.UI
                     {
                         SubjectId = "dcaec9ce-91c9-4105-8d4d-eee3365acd82",
                         Username = "cristina@gmail.com",
-                        Password = "Pass!2",
+                        Password = "qwe123",
                         Claims =
                         {
                             new Claim(JwtClaimTypes.Name, "cristina@gmail.com"),
@@ -87,7 +87,7 @@ namespace IdentityServerHost.Quickstart.UI
                     {
                         SubjectId = "b9991f69-b4c1-477d-9432-2f7cf6099e02",
                         Username = "dev@gmail.com",
-                        Password = "Pass!2",
+                        Password = "qwe123",
                         Claims =
                         {
                             new Claim(JwtClaimTypes.Name, "dev@gmail.com"),

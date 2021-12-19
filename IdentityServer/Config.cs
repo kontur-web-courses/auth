@@ -15,7 +15,11 @@ namespace IdentityServer
             { 
                 new IdentityResources.OpenId(),
                 new IdentityResources.Profile(),
-                new IdentityResources.Email()
+                new IdentityResources.Email(),
+                new IdentityResource("photos_app", "Web Photos", new []
+                {
+                    "role", "subscription", "testing"
+                })
             };
 
         public static IEnumerable<ApiResource> Apis =>
@@ -23,8 +27,9 @@ namespace IdentityServer
             {
                 new ApiResource("photos_service", "Сервис фотографий")
                 {
-                    Scopes = { "photos" }
-                }
+                    Scopes = { "photos" },
+                    ApiSecrets = { new Secret("photos_service_secret".Sha256()) }
+                },
             };
 
         public static IEnumerable<ApiScope> ApiScopes =>
@@ -55,10 +60,13 @@ namespace IdentityServer
                     AllowedGrantTypes = GrantTypes.Code,
         
                     // NOTE: показывать ли пользователю страницу consent со списком запрошенных разрешений
-                    RequireConsent = false,
+                    RequireConsent = true,
 
                     // NOTE: куда отправлять после логина
                     RedirectUris = { "https://localhost:5001/signin-passport" },
+                    
+                    // NOTE: куда предлагать перейти после логаута
+                    PostLogoutRedirectUris = { "https://localhost:5001/signout-callback-passport" },
 
                     AllowedScopes = new List<string>
                     {
@@ -67,13 +75,61 @@ namespace IdentityServer
                         // NOTE: Позволяет запрашивать профиль пользователя через id token
                         IdentityServerConstants.StandardScopes.Profile,
                         // NOTE: Позволяет запрашивать email пользователя через id token
-                        IdentityServerConstants.StandardScopes.Email
+                        IdentityServerConstants.StandardScopes.Email,
+                        "photos_app",
+                        "photos"
+                    },
+                    
+                    AccessTokenLifetime = 30,
+
+                    // NOTE: Надо ли добавлять информацию о пользователе в id token при запросе одновременно
+                    // id token и access token, как это происходит в code flow.
+                    // Либо придется ее получать отдельно через user info endpoint.
+                    AlwaysIncludeUserClaimsInIdToken = true,
+                    AllowOfflineAccess = true,
+                }, 
+                new Client
+                {
+                    ClientId = "Photos SPA",
+                    // NOTE: SPA не может хранить секрет, потому что полные исходники доступны в браузере
+                    RequireClientSecret = false,
+                    // NOTE: Поэтому для безопасного получения токена необходимо использовать Proof Key for Code Exchange
+                    // Эта опция включена по умолчанию, но здесь пусть будет включена явно
+                    RequirePkce = true,
+
+                    AllowedGrantTypes = GrantTypes.Code,
+    
+                    // NOTE: показывать ли пользователю страницу consent со списком запрошенных разрешений
+                    RequireConsent = false,
+
+                    // NOTE: куда отправлять после логина
+                    RedirectUris = { "https://localhost:8001/authentication/signin" },
+
+                    // NOTE: куда предлагать перейти после логаута
+                    PostLogoutRedirectUris = { "https://localhost:8001/authentication/signout" },
+
+                    // NOTE: откуда могут приходить запросы из JS
+                    AllowedCorsOrigins = { "https://localhost:8001" },
+
+                    AllowedScopes = new List<string>
+                    {
+                        // NOTE: Позволяет запрашивать id token
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        // NOTE: Позволяет запрашивать профиль пользователя через id token
+                        IdentityServerConstants.StandardScopes.Profile,
+                        // NOTE: Позволяет запрашивать email пользователя через id token
+                        IdentityServerConstants.StandardScopes.Email,
+                        "photos"
                     },
 
                     // NOTE: Надо ли добавлять информацию о пользователе в id token при запросе одновременно
                     // id token и access token, как это происходит в code flow.
                     // Либо придется ее получать отдельно через user info endpoint.
                     AlwaysIncludeUserClaimsInIdToken = true,
+
+                    // NOTE: refresh token точно не будет использоваться
+                    AllowOfflineAccess = false,
+                    AccessTokenLifetime = 2*60,
                 }
             };
     }
