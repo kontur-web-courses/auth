@@ -1,8 +1,10 @@
 ﻿@using System.Security.Claims
+@using IdentityModel
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using Microsoft.AspNetCore.DataProtection
 @using Microsoft.AspNetCore.Identity
+@using NUnit.Framework
 
 @inject IDataProtectionProvider dataProtectionProvider
 @inject ICookieManager cookieManager
@@ -40,7 +42,7 @@
         {
             <div><b>@item.Key</b>: @item.Value</div>
         }
-        <div><br /></div>
+        <div><br/></div>
 
         <h4>Identity</h4>
         RenderIdentityInfo(ticket.Principal.Identity as ClaimsIdentity);
