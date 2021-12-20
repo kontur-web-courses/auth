@@ -23,22 +23,21 @@ namespace PhotosApp.Services.Authorization
             AuthorizationHandlerContext context, MustOwnPhotoRequirement requirement)
         {
             var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            // NOTE: IHttpContextAccessor позволяет получать HttpContext там, где это не получается сделать более явно.
             var httpContext = httpContextAccessor.HttpContext;
-            // NOTE: RouteData содержит информацию о пути и параметрах запроса.
-            // Ее сформировал UseRouting и к моменту авторизации уже отработал.
             var routeData = httpContext?.GetRouteData();
-
-            // NOTE: Использовать, если нужное условие выполняется
-            // context.Succeed(requirement);
-
-            // NOTE: Использовать, если нужное условие не выполняется
-            // context.Fail();
-
-            // NOTE: Этот метод получает информацию о фотографии, в том числе о владельце
-            // await photosRepository.GetPhotoMetaAsync(...)
-
-            throw new NotImplementedException();
+            var photoIdString = routeData?.Values["id"].ToString();
+            if (!Guid.TryParse(photoIdString, out var photoId))
+            {
+                context.Fail();
+                return;
+            }
+            var photo = await photosRepository.GetPhotoMetaAsync(photoId);
+            if (photo != null && photo.OwnerId == userId)
+            {
+                context.Succeed(requirement);
+                return;
+            }
+            context.Fail();
         }
     }
 }
