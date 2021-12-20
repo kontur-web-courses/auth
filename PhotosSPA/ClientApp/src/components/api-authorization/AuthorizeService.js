@@ -20,13 +20,14 @@ export class AuthorizeService {
   }
 
   async getUser() {
-    if (this._user && this._user.profile) {
-      return this._user.profile;
-    }
+      if (this._user && this._user.profile) {
+          return this._user.profile;
+      }
 
-    await this.ensureUserManagerInitialized();
-    const user = await this.userManager.getUser();
-    return user && user.profile;
+      await this.ensureUserManagerInitialized();
+      const user = await this.userManager.getUser();
+      const accessTokenExpired = !user || typeof user.expired !== "boolean" || user.expired;
+      return user && !accessTokenExpired ? user.profile : null;
   }
 
   async getAccessToken() {
@@ -209,6 +210,12 @@ export class AuthorizeService {
     this.userManager.events.addUserSignedOut(async () => {
       await this.userManager.removeUser();
       this.updateState(undefined);
+    });
+
+    this.userManager.events.addAccessTokenExpired(async () => {
+        if (this._user !== undefined) {
+            this.updateState(undefined);
+        }
     });
   }
 
