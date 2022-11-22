@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Services;
+using PhotosApp.Services.Authorization;
 using PhotosApp.Services.TicketStores;
 
 [assembly: HostingStartup(typeof(PhotosApp.Areas.Identity.IdentityHostingStartup))]
@@ -28,6 +29,8 @@ namespace PhotosApp.Areas.Identity
                         context.Configuration.GetConnectionString("TicketsDbContextConnection")));
 
                 services.AddDefaultIdentity<PhotosAppUser>()
+                    .AddRoles<IdentityRole>()
+                    .AddClaimsPrincipalFactory<CustomClaimsPrincipalFactory>()
                     .AddEntityFrameworkStores<UsersDbContext>()
                     // .AddEntityFrameworkStores<TicketsDbContext>()
                     .AddErrorDescriber<RussianIdentityErrorDescriber>();
@@ -56,6 +59,31 @@ namespace PhotosApp.Areas.Identity
                     options.LoginPath = "/Identity/Account/Login";
                     options.ReturnUrlParameter = CookieAuthenticationDefaults.ReturnUrlParameter;
                     options.SlidingExpiration = true;
+                });
+                
+                services.AddAuthorization(options =>
+                {
+                    options.AddPolicy(
+                        "Beta",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireClaim("testing", "beta");
+                        });
+                    options.AddPolicy(
+                        "CanAddPhoto",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireClaim("subscription", "paid");
+                        });
+                    options.AddPolicy(
+                        "MustOwnPhoto",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
+                        });
                 });
             });
         }
