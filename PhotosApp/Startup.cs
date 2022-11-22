@@ -13,6 +13,7 @@ using PhotosApp.Clients.Models;
 using PhotosApp.Data;
 using PhotosApp.Models;
 using PhotosApp.Services;
+using PhotosApp.Services.TicketStores;
 using Serilog;
 
 namespace PhotosApp
@@ -42,9 +43,14 @@ namespace PhotosApp
             // где это не получается сделать более явно.
             services.AddHttpContextAccessor();
 
-            var connectionString = configuration.GetConnectionString("PhotosDbContextConnection")
+            var photosConnectionString = configuration.GetConnectionString("PhotosDbContextConnection")
                 ?? "Data Source=PhotosApp.db";
-            services.AddDbContext<PhotosDbContext>(o => o.UseSqlite(connectionString));
+            
+            var ticketsConnectionString = configuration.GetConnectionString("TicketsDbContextConnection")
+                                         ?? "Data Source=PhotosApp.db";
+            
+            services.AddDbContext<PhotosDbContext>(o => o.UseSqlite(photosConnectionString));
+            services.AddDbContext<TicketsDbContext>(o => o.UseSqlite(ticketsConnectionString));
             // NOTE: Вместо Sqlite можно использовать LocalDB от Microsoft или другой SQL Server
             //services.AddDbContext<PhotosDbContext>(o =>
             //    o.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=PhotosApp;Trusted_Connection=True;"));
@@ -52,6 +58,7 @@ namespace PhotosApp
             services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
             
             services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAppUser>>();
+            services.AddScoped<ITicketStore, EntityTicketStore>();
 
             services.AddAutoMapper(cfg =>
             {

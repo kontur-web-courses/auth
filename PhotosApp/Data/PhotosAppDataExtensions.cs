@@ -24,11 +24,14 @@ namespace PhotosApp.Data
                     if (env.IsDevelopment())
                     {
                         scope.ServiceProvider.GetRequiredService<PhotosDbContext>().Database.Migrate();
+                        scope.ServiceProvider.GetRequiredService<TicketsDbContext>().Database.Migrate();
 
                         var photosDbContext = scope.ServiceProvider.GetRequiredService<PhotosDbContext>();
                         photosDbContext.SeedWithSamplePhotosAsync().Wait();
                         scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>()
                             .SeedWithSampleUsersAsync()
+                            .Wait();
+                        scope.ServiceProvider.GetRequiredService<TicketsDbContext>().SeedWithSampleTicketsAsync()
                             .Wait();
                     }
                 }
@@ -159,6 +162,16 @@ namespace PhotosApp.Data
                     Email = "vicky@gmail.com"
                 };
                 await userManager.RegisterUserIfNotExists(user, "Pass!2");
+            }
+            
+            {
+                var user = new TUser
+                {
+                    Id = "a83b72ed-3f99-44b5-aa32-f9d03e7ea1fd",
+                    UserName = "ksysha@skbkontur.ru",
+                    Email = "ksysha@skbkontur.ru"
+                };
+                await userManager.RegisterUserIfNotExists(user, "qwerty");
             }
 
             {
