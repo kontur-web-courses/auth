@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PhotosApp.Areas.Identity.Data;
+using PhotosApp.Services;
 
 [assembly: HostingStartup(typeof(PhotosApp.Areas.Identity.IdentityHostingStartup))]
 namespace PhotosApp.Areas.Identity
@@ -20,7 +21,8 @@ namespace PhotosApp.Areas.Identity
                         context.Configuration.GetConnectionString("UsersDbContextConnection")));
 
                 services.AddDefaultIdentity<PhotosAppUser>()
-                    .AddEntityFrameworkStores<UsersDbContext>();
+                    .AddEntityFrameworkStores<UsersDbContext>()
+                    .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>();
 
                 services.Configure<IdentityOptions>(options =>
                 {
