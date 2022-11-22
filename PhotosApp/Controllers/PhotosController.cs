@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PhotosApp.Data;
@@ -11,6 +12,7 @@ using PhotosApp.Models;
 
 namespace PhotosApp.Controllers
 {
+    [Authorize]
     public class PhotosController : Controller
     {
         private readonly IPhotosRepository photosRepository;
@@ -22,6 +24,7 @@ namespace PhotosApp.Controllers
             this.mapper = mapper;
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
             var ownerId = GetOwnerId();
