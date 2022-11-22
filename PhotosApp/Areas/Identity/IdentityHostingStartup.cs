@@ -19,8 +19,22 @@ namespace PhotosApp.Areas.Identity
                     options.UseSqlite(
                         context.Configuration.GetConnectionString("UsersDbContextConnection")));
 
-                services.AddDefaultIdentity<PhotosAppUser>(options => options.SignIn.RequireConfirmedAccount = true)
+                services.AddDefaultIdentity<PhotosAppUser>()
                     .AddEntityFrameworkStores<UsersDbContext>();
+
+                services.Configure<IdentityOptions>(options =>
+                {
+                    options.Password.RequireDigit = false;
+                    options.Password.RequireLowercase = true;
+                    options.Password.RequireNonAlphanumeric = false;
+                    options.Password.RequireUppercase = false;
+                    options.Password.RequiredLength = 6;
+                    options.Password.RequiredUniqueChars = 1;
+
+                    options.SignIn.RequireConfirmedAccount = false;
+                    options.SignIn.RequireConfirmedEmail = false;
+                    options.SignIn.RequireConfirmedPhoneNumber = false;
+                });
             });
         }
     }
