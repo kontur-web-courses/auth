@@ -30,6 +30,9 @@ namespace PhotosApp.Data
                         var photosDbContext = scope.ServiceProvider.GetRequiredService<PhotosDbContext>();
                         photosDbContext.SeedWithSamplePhotosAsync().Wait();
 
+                        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                        roleManager.SeedWithSampleRolesAsync().Wait();
+
                         var usersManager = scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>();
                         usersManager.SeedWithSampleUsersAsync().Wait();
 
