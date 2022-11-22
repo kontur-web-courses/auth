@@ -24,6 +24,14 @@ namespace PhotosApp.Areas.Identity
                     .AddEntityFrameworkStores<UsersDbContext>()
                     .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>();
 
+                services.Configure<PasswordHasherOptions>(options =>
+                {
+                    options.CompatibilityMode = PasswordHasherCompatibilityMode.IdentityV3;
+                    options.IterationCount = 12000;
+                });
+
+                services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAppUser>>();
+
                 services.Configure<IdentityOptions>(options =>
                 {
                     options.Password.RequireDigit = false;
