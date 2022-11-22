@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
@@ -137,7 +138,7 @@ namespace PhotosApp.Controllers
 
         private string GetOwnerId()
         {
-            return "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd";
+            return User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
     }
 }
