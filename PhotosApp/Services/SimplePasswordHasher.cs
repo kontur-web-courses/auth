@@ -25,11 +25,9 @@ namespace PhotosApp.Services
         public PasswordVerificationResult VerifyHashedPassword(TUser user,
             string hashedPassword, string providedPassword)
         {
-            byte[] expectedHashBytes = null;
-            byte[] actualHashBytes = null;
-
-            throw new NotImplementedException();
-
+            var hashedPasswordBytes = Convert.FromBase64String(hashedPassword);
+            var (saltBytes, expectedHashBytes) = DisconcatenateBytes(hashedPasswordBytes, SaltSizeInBits / 8);
+            byte[] actualHashBytes = GetHashBytes(providedPassword, saltBytes);
             // Если providedPassword корректен, то в результате хэширования его с той же самой солью,
             // что и оригинальный пароль, должен получаться тот же самый хэш.
             return AreByteArraysEqual(actualHashBytes, expectedHashBytes)
@@ -60,7 +58,7 @@ namespace PhotosApp.Services
         private static byte[] ConcatenateBytes(byte[] leftBytes, byte[] rightBytes)
         {
             var resultBytes = new byte[leftBytes.Length + rightBytes.Length];
-            
+
             Buffer.BlockCopy(
                 leftBytes, 0, // байты источника и позиция в них
                 resultBytes, 0, // байты назначения и начальная позиция в них
@@ -70,8 +68,13 @@ namespace PhotosApp.Services
                 rightBytes, 0, // байты источника и позиция в них
                 resultBytes, leftBytes.Length, // байты назначения и начальная позиция в них
                 rightBytes.Length); // количество байтов, которое надо скопировать
-            
+
             return resultBytes;
+        }
+
+        private static (byte[], byte[]) DisconcatenateBytes(byte[] resultBytes, int sep)
+        {
+            return (resultBytes[..sep], resultBytes[sep..]);
         }
 
         private static bool AreByteArraysEqual(byte[] a, byte[] b)
