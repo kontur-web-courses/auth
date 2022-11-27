@@ -5,7 +5,7 @@ namespace PhotosApp.Controllers
 {
     public class DevController : Controller
     {
-        [Authorize(Roles = "Dev")]
+        [Authorize(Policy = "Dev")]
         public IActionResult Decode()
         {
             return View();
