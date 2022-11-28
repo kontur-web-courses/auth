@@ -58,6 +58,10 @@ namespace PhotosApp
                     .ForMember(m => m.OwnerId, options => options.Ignore());
             }, new System.Reflection.Assembly[0]);
 
+            services.AddRazorPages();
+            if (env.IsDevelopment())
+                mvc.AddRazorRuntimeCompilation();
+
             services.AddTransient<ICookieManager, ChunkingCookieManager>();
         }
 
@@ -77,9 +81,19 @@ namespace PhotosApp
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
+
+            app.UseAuthentication();
+            app.UseAuthorization();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute("default", "{controller=Photos}/{action=Index}/{id?}");
+            });
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllerRoute("default", "{controller=Photos}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
             });
         }
     }
