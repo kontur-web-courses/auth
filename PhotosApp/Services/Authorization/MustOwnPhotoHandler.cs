@@ -29,16 +29,17 @@ namespace PhotosApp.Services.Authorization
             // Ее сформировал UseRouting и к моменту авторизации уже отработал.
             var routeData = httpContext?.GetRouteData();
 
-            // NOTE: Использовать, если нужное условие выполняется
-            // context.Succeed(requirement);
-
-            // NOTE: Использовать, если нужное условие не выполняется
-            // context.Fail();
-
-            // NOTE: Этот метод получает информацию о фотографии, в том числе о владельце
-            // await photosRepository.GetPhotoMetaAsync(...)
-
-            throw new NotImplementedException();
+            if (routeData != null && Guid.TryParse(routeData.Values["id"]?.ToString(), out var photoId))
+            {
+                var phEntity = await photosRepository.GetPhotoMetaAsync(photoId);
+                if (userId.Equals(phEntity.OwnerId))
+                {
+                    context.Succeed(requirement);
+                    return;
+                }
+            }
+            
+            context.Fail();
         }
     }
 }
