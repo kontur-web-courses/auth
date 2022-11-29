@@ -68,6 +68,17 @@ namespace PhotosApp.Areas.Identity
                     options.ReturnUrlParameter = CookieAuthenticationDefaults.ReturnUrlParameter;
                     options.SlidingExpiration = true;
                 });
+
+                services.AddAuthorization(options =>
+                {
+                    options.AddPolicy(
+                        "Beta",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireClaim("testing", "beta");
+                        });
+                });
             });
         }
     }

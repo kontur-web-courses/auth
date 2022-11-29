@@ -93,6 +93,7 @@ namespace PhotosApp.Controllers
             return RedirectToAction("Index");
         }
 
+        [Authorize(Policy = "Beta")]
         public async Task<IActionResult> EditPhoto(Guid id)
         {
             var photo = await photosRepository.GetPhotoMetaAsync(id);
@@ -107,6 +108,7 @@ namespace PhotosApp.Controllers
             return View(viewModel);
         }
 
+        [Authorize(Policy = "Beta")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditPhoto(EditPhotoModel editPhotoModel)
