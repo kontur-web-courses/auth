@@ -33,6 +33,13 @@ namespace PhotosService
             {
                 options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             });
+            
+            services.AddAuthentication("Bearer")
+                .AddJwtBearer("Bearer", options =>
+                {
+                    options.Authority = "https://localhost:7001";
+                    options.Audience = "photos_service";
+                });
 
             var connectionString = configuration.GetConnectionString("PhotosDbContextConnection")
                 ?? "Data Source=PhotosService.db";
@@ -58,6 +65,10 @@ namespace PhotosService
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
+            
+            app.UseAuthentication();
+            app.UseAuthorization();
+            
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
