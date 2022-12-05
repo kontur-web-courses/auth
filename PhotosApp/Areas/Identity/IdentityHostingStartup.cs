@@ -108,8 +108,8 @@ namespace PhotosApp.Areas.Identity
                     .AddGoogle("Google", options =>
                     {
                         // todo uncomment
-                        options.ClientId = "abc";  // context.Configuration["Authentication:Google:ClientId"];
-                        options.ClientSecret = "abc";  // context.Configuration["Authentication:Google:ClientSecret"];
+                        options.ClientId = context.Configuration["Authentication:Google:ClientId"];
+                        options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
                     });
 
                 services.AddTransient<IEmailSender, SimpleEmailSender>(serviceProvider =>
