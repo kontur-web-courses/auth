@@ -7,6 +7,8 @@ using NUnit.Framework;
 
 namespace PhotosApp.Services
 {
+    using System.Text;
+
     public class SimplePasswordHasher<TUser> : IPasswordHasher<TUser>
         where TUser : IdentityUser
     {
@@ -15,7 +17,7 @@ namespace PhotosApp.Services
 
         public string HashPassword(TUser user, string password)
         {
-            byte[] saltBytes = GenerateSaltBytes();
+            byte[] saltBytes = GenerateSaltBytes(user);
             byte[] hashBytes = GetHashBytes(password, saltBytes);
             byte[] hashedPasswordBytes = ConcatenateBytes(saltBytes, hashBytes);
             string hashedPassword = Convert.ToBase64String(hashedPasswordBytes);
@@ -25,10 +27,11 @@ namespace PhotosApp.Services
         public PasswordVerificationResult VerifyHashedPassword(TUser user,
             string hashedPassword, string providedPassword)
         {
-            byte[] expectedHashBytes = null;
-            byte[] actualHashBytes = null;
-
-            throw new NotImplementedException();
+            var expectedHashBytes = Convert.FromBase64String(hashedPassword);
+            var salt = expectedHashBytes[..(SaltSizeInBits / 8)];
+            
+            var hashBytes = GetHashBytes(providedPassword, salt);
+            var actualHashBytes = ConcatenateBytes(salt, hashBytes);
 
             // Если providedPassword корректен, то в результате хэширования его с той же самой солью,
             // что и оригинальный пароль, должен получаться тот же самый хэш.
@@ -37,13 +40,11 @@ namespace PhotosApp.Services
                 : PasswordVerificationResult.Failed;
         }
 
-        private byte[] GenerateSaltBytes()
+        private byte[] GenerateSaltBytes(TUser user)
         {
-            byte[] saltBytes = new byte[SaltSizeInBits / 8];
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(saltBytes);
-            }
+            var saltBytes = new byte[SaltSizeInBits / 8];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(saltBytes);
             return saltBytes;
         }
 

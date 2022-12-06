@@ -11,6 +11,8 @@ using System;
 
 namespace IdentityServer
 {
+    using Data;
+
     public class Program
     {
         public static int Main(string[] args)
@@ -31,6 +33,8 @@ namespace IdentityServer
                 var hostBuilder = CreateHostBuilder(args);
                 Log.Information("Building web host");
                 var host = hostBuilder.Build();
+                Log.Information("Preparing data");
+                host.PrepareData();
                 Log.Information("Running web host");
                 host.Run();
                 return 0;

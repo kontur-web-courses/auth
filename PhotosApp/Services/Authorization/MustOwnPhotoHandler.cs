@@ -8,6 +8,8 @@ using PhotosApp.Data;
 
 namespace PhotosApp.Services.Authorization
 {
+    using System.Linq;
+
     public class MustOwnPhotoHandler : AuthorizationHandler<MustOwnPhotoRequirement>
     {
         private readonly IPhotosRepository photosRepository;
@@ -28,17 +30,14 @@ namespace PhotosApp.Services.Authorization
             // NOTE: RouteData содержит информацию о пути и параметрах запроса.
             // Ее сформировал UseRouting и к моменту авторизации уже отработал.
             var routeData = httpContext?.GetRouteData();
+            var photoIdRouteData = routeData.Values.FirstOrDefault(value => value.Key == "id");
 
-            // NOTE: Использовать, если нужное условие выполняется
-            // context.Succeed(requirement);
-
-            // NOTE: Использовать, если нужное условие не выполняется
-            // context.Fail();
-
-            // NOTE: Этот метод получает информацию о фотографии, в том числе о владельце
-            // await photosRepository.GetPhotoMetaAsync(...)
-
-            throw new NotImplementedException();
+            if (Guid.TryParse((string)photoIdRouteData.Value, out var photoId))
+            {
+                var photo = await photosRepository.GetPhotoMetaAsync(photoId);
+                if (photo.OwnerId == userId)
+                    context.Succeed(requirement);
+            }
         }
     }
 }

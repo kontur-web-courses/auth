@@ -10,6 +10,14 @@ using Serilog;
 
 namespace IdentityServer
 {
+    using AspNetCore.Identity.Mongo;
+    using Data;
+    using IdentityServer4.Test;
+    using IdentityServerHost.Quickstart.UI;
+    using Microsoft.AspNetCore.Identity;
+    using Microsoft.EntityFrameworkCore;
+    using Models;
+
     public class Startup
     {
         public IWebHostEnvironment Environment { get; }
@@ -22,13 +30,29 @@ namespace IdentityServer
         public void ConfigureServices(IServiceCollection services)
         {
             // uncomment, if you want to add an MVC-based UI
-            //services.AddControllersWithViews();
-
+            services.AddControllersWithViews();
+            
+            services.AddIdentityMongoDbProvider<ApplicationUser, ApplicationRole, string>(
+                    identity =>
+                    {
+                        // NOTE: просто пример настройки
+                        identity.Password.RequiredLength = 4;
+                    },
+                    mongo =>
+                    {
+                        // NOTE: нужная строка подключения для твоего кластера
+                        // Здесь используется адрес локального кластера по умолчанию
+                        mongo.ConnectionString = "mongodb://127.0.0.1:27017/identity";
+                    })
+                .AddDefaultTokenProviders();
+            
             var builder = services.AddIdentityServer()
                 .AddInMemoryIdentityResources(Config.Ids)
                 .AddInMemoryApiResources(Config.Apis)
                 .AddInMemoryApiScopes(Config.ApiScopes)
-                .AddInMemoryClients(Config.Clients);
+                .AddInMemoryClients(Config.Clients)
+                .AddAspNetIdentity<ApplicationUser>();
+            
 
             // not recommended for production - you need to store your key material somewhere secure
             builder.AddDeveloperSigningCredential();
@@ -42,21 +66,21 @@ namespace IdentityServer
             }
 
             // uncomment if you want to add MVC
-            //app.UseStaticFiles();
+            app.UseStaticFiles();
 
             app.UseSerilogRequestLogging();
 
             // uncomment if you want to add MVC
-            //app.UseRouting();
+            app.UseRouting();
 
             app.UseIdentityServer();
 
             // uncomment, if you want to add MVC
-            //app.UseAuthorization();
-            //app.UseEndpoints(endpoints =>
-            //{
-            //    endpoints.MapDefaultControllerRoute();
-            //});
+            app.UseAuthorization();
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapDefaultControllerRoute();
+            });
         }
     }
 }

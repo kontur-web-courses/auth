@@ -12,6 +12,11 @@ using Serilog;
 
 namespace PhotosService
 {
+    using System;
+    using System.Threading.Tasks;
+    using Microsoft.AspNetCore.Authentication.JwtBearer;
+    using Services;
+
     public class Startup
     {
         private IWebHostEnvironment env { get; }
@@ -28,6 +33,8 @@ namespace PhotosService
             services.AddControllers(options =>
             {
                 options.ReturnHttpNotAcceptable = true;
+                // NOTE: Существенно, что новый провайдер добавляется в начало списка перед провайдером по умолчанию
+                options.ModelBinderProviders.Insert(0, new JwtSecurityTokenModelBinderProvider());
             })
             .AddNewtonsoftJson(options =>
             {
@@ -37,6 +44,42 @@ namespace PhotosService
             var connectionString = configuration.GetConnectionString("PhotosDbContextConnection")
                 ?? "Data Source=PhotosService.db";
             services.AddDbContext<PhotosDbContext>(o => o.UseSqlite(connectionString));
+            
+            services.AddAuthentication("Bearer")
+                .AddJwtBearer("Bearer", options =>
+                {
+                    const string authority = "https://localhost:7001";
+                    const string apiResourceId = "photos_service";
+                    const string apiResourceSecret = "photos_service_secret";
+
+                    options.Authority = authority;
+                    options.Audience = apiResourceId;
+
+                    options.SecurityTokenValidators.Clear();
+                    options.SecurityTokenValidators.Add(new IntrospectionSecurityTokenValidator(
+                        authority, apiResourceId, apiResourceSecret));
+                    
+                    options.TokenValidationParameters.ClockSkew = TimeSpan.Zero;
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnTokenValidated = context =>
+                        {
+                            JwtSecurityTokenModelBinder.SaveToken(context.HttpContext, context.SecurityToken);
+                            return Task.CompletedTask;
+                        }
+                    };
+                });
+            
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(
+                    builder =>
+                    {
+                        builder.WithOrigins("https://localhost:8001")
+                            .AllowAnyHeader()
+                            .AllowAnyMethod();
+                    });
+            });
 
             services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
 
@@ -58,6 +101,10 @@ namespace PhotosService
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
+            app.UseCors();
+            app.UseAuthentication();
+            app.UseAuthorization();
+            
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

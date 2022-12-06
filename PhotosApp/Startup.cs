@@ -14,6 +14,21 @@ using Serilog;
 
 namespace PhotosApp
 {
+    using System.IdentityModel.Tokens.Jwt;
+    using System.Threading.Tasks;
+    using Areas.Identity.Data;
+    using Microsoft.AspNetCore.Authentication.JwtBearer;
+    using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+    using Microsoft.AspNetCore.Authorization;
+    using Microsoft.AspNetCore.Identity;
+    using Microsoft.AspNetCore.Identity.UI.Services;
+    using Microsoft.Extensions.Logging;
+    using Microsoft.IdentityModel.Protocols;
+    using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+    using Microsoft.IdentityModel.Tokens;
+    using Services;
+    using Services.Authorization;
+
     public class Startup
     {
         private IWebHostEnvironment env { get; }
@@ -31,6 +46,7 @@ namespace PhotosApp
             services.Configure<PhotosServiceOptions>(configuration.GetSection("PhotosService"));
 
             var mvc = services.AddControllersWithViews();
+            services.AddRazorPages();
             if (env.IsDevelopment())
                 mvc.AddRazorRuntimeCompilation();
 
@@ -38,14 +54,25 @@ namespace PhotosApp
             // где это не получается сделать более явно.
             services.AddHttpContextAccessor();
 
+
+            const string oidcAuthority = "https://localhost:7001";
+            var oidcConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+                $"{oidcAuthority}/.well-known/openid-configuration",
+                new OpenIdConnectConfigurationRetriever(),
+                new HttpDocumentRetriever());
+            services.AddSingleton<IConfigurationManager<OpenIdConnectConfiguration>>(oidcConfigurationManager);
+
+
             var connectionString = configuration.GetConnectionString("PhotosDbContextConnection")
-                ?? "Data Source=PhotosApp.db";
+                                   ?? "Data Source=PhotosApp.db";
             services.AddDbContext<PhotosDbContext>(o => o.UseSqlite(connectionString));
             // NOTE: Вместо Sqlite можно использовать LocalDB от Microsoft или другой SQL Server
             //services.AddDbContext<PhotosDbContext>(o =>
             //    o.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=PhotosApp;Trusted_Connection=True;"));
 
-            services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
+            //services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
+            services.AddScoped<IPhotosRepository, RemotePhotosRepository>();
+            services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAppUser>>();
 
             services.AddAutoMapper(cfg =>
             {
@@ -58,7 +85,120 @@ namespace PhotosApp
                     .ForMember(m => m.OwnerId, options => options.Ignore());
             }, new System.Reflection.Assembly[0]);
 
+            services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
             services.AddTransient<ICookieManager, ChunkingCookieManager>();
+
+            services.AddTransient<IEmailSender, SimpleEmailSender>(serviceProvider =>
+                new SimpleEmailSender(
+                    serviceProvider.GetRequiredService<ILogger<SimpleEmailSender>>(),
+                    serviceProvider.GetRequiredService<IWebHostEnvironment>(),
+                    configuration["SimpleEmailSender:Host"],
+                    configuration.GetValue<int>("SimpleEmailSender:Port"),
+                    configuration.GetValue<bool>("SimpleEmailSender:EnableSSL"),
+                    configuration["SimpleEmailSender:UserName"],
+                    configuration["SimpleEmailSender:Password"]
+                ));
+
+            services.AddAuthentication(options =>
+                {
+                    // NOTE: Схема, которую внешние провайдеры будут использовать для сохранения данных о пользователе
+                    // NOTE: Так как значение совпадает с DefaultScheme, то эту настройку можно не задавать
+                    options.DefaultSignInScheme = "Cookie";
+                    // NOTE: Схема, которая будет вызываться, если у пользователя нет доступа
+                    options.DefaultChallengeScheme = "Passport";
+                    // NOTE: Схема на все остальные случаи жизни
+                    options.DefaultScheme = "Cookie";
+                })
+                .AddOpenIdConnect("Passport", "Паспорт", options =>
+                {
+                    options.ConfigurationManager = oidcConfigurationManager;
+                    options.Authority = oidcAuthority;
+                    options.ClientId = "Photos App by OIDC";
+                    options.ClientSecret = "secret";
+                    options.ResponseType = OpenIdConnectResponseType.Code;
+                    options.SaveTokens = true;
+
+                    // NOTE: oidc и profile уже добавлены по умолчанию
+                    options.Scope.Add("email");
+                    options.Scope.Add("photos");
+                    options.Scope.Add("offline_access");
+
+                    options.CallbackPath = "/signin-passport";
+                    options.SignedOutCallbackPath = "/signout-callback-passport";
+                    options.Events = new OpenIdConnectEvents
+                    {
+                        OnRemoteFailure = context =>
+                        {
+                            context.Response.Redirect("/");
+                            context.HandleResponse();
+                            return Task.CompletedTask;
+                        },
+                        
+                        OnTokenResponseReceived = context =>
+                        {
+                            var tokenResponse = context.TokenEndpointResponse;
+                            var tokenHandler = new JwtSecurityTokenHandler();
+
+                            SecurityToken accessToken = null;
+                            if (tokenResponse.AccessToken != null)
+                            {
+                                accessToken = tokenHandler.ReadToken(tokenResponse.AccessToken);
+                            }
+
+                            SecurityToken idToken = null;
+                            if (tokenResponse.IdToken != null)
+                            {
+                                idToken = tokenHandler.ReadToken(tokenResponse.IdToken);
+                            }
+
+                            string refreshToken = null;
+                            if (tokenResponse.RefreshToken != null)
+                            {
+                                // NOTE: Это не JWT-токен
+                                refreshToken = tokenResponse.RefreshToken;
+                            }
+
+                            return Task.CompletedTask;
+                        },
+                    };
+                    
+                    
+
+                    // NOTE: все эти проверки токена выполняются по умолчанию, указаны для ознакомления
+                    options.TokenValidationParameters.ValidateIssuer = true; // проверка издателя
+                    options.TokenValidationParameters.ValidateAudience = true; // проверка получателя
+                    options.TokenValidationParameters.ValidateLifetime = true; // проверка не протух ли
+                    options.TokenValidationParameters.RequireSignedTokens = true; // есть ли валидная подпись издателя
+                })
+                .AddCookie("Cookie", options =>
+                {
+                    // NOTE: Пусть у куки будет имя, которое расшифровывается на странице «Decode»
+                    options.Cookie.Name = "PhotosApp.Auth";
+                    // NOTE: Если не задать здесь путь до обработчика logout, то в этом обработчике
+                    // будет игнорироваться редирект по настройке AuthenticationProperties.RedirectUri
+                    options.LogoutPath = "/Passport/Logout";
+                });
+
+            services.AddAuthorization(options =>
+            {
+                options.DefaultPolicy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+                options.AddPolicy(
+                    "Beta",
+                    policyBuilder =>
+                    {
+                        policyBuilder.RequireAuthenticatedUser();
+                        policyBuilder.RequireClaim("testing", "beta");
+                    });
+                options.AddPolicy(
+                    "Dev",
+                    policyBuilder => { policyBuilder.RequireAuthenticatedUser(); });
+                options.AddPolicy("CanAddPhoto",
+                    policyBuilder => { policyBuilder.RequireClaim("subscription", "paid"); });
+                options.AddPolicy("MustOwnPhoto",
+                    policyBuilder => { policyBuilder.AddRequirements(new MustOwnPhotoRequirement()); });
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -77,9 +217,14 @@ namespace PhotosApp
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
+
+            app.UseAuthentication();
+            app.UseAuthorization();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute("default", "{controller=Photos}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
             });
         }
     }
