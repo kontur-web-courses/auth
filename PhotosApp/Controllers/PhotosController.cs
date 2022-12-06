@@ -11,6 +11,10 @@ using PhotosApp.Models;
 
 namespace PhotosApp.Controllers
 {
+    using System.Security.Claims;
+    using Microsoft.AspNetCore.Authorization;
+
+    [Authorize]
     public class PhotosController : Controller
     {
         private readonly IPhotosRepository photosRepository;
@@ -22,6 +26,7 @@ namespace PhotosApp.Controllers
             this.mapper = mapper;
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
             var ownerId = GetOwnerId();
@@ -32,6 +37,7 @@ namespace PhotosApp.Controllers
             return View(model);
         }
 
+        //[Authorize(Policy = "MustOwnPhoto")]
         public async Task<IActionResult> GetPhoto(Guid id)
         {
             var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
@@ -45,6 +51,7 @@ namespace PhotosApp.Controllers
         }
 
         [HttpGet("photos/{id}")]
+        //[Authorize(Policy = "MustOwnPhoto")]
         public async Task<IActionResult> GetPhotoFile(Guid id)
         {
             var photoContent = await photosRepository.GetPhotoContentAsync(id);
@@ -54,6 +61,7 @@ namespace PhotosApp.Controllers
             return File(photoContent.Content, photoContent.ContentType, photoContent.FileName);
         }
 
+        [Authorize(Policy = "CanAddPhoto")]
         public IActionResult AddPhoto()
         {
             return View();
@@ -61,6 +69,7 @@ namespace PhotosApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "CanAddPhoto")]
         public async Task<IActionResult> AddPhoto(AddPhotoModel addPhotoModel)
         {
             if (addPhotoModel == null || !ModelState.IsValid)
@@ -89,6 +98,8 @@ namespace PhotosApp.Controllers
             return RedirectToAction("Index");
         }
 
+        [Authorize(Policy = "Beta")]
+        //[Authorize(Policy = "MustOwnPhoto")]
         public async Task<IActionResult> EditPhoto(Guid id)
         {
             var photo = await photosRepository.GetPhotoMetaAsync(id);
@@ -103,6 +114,8 @@ namespace PhotosApp.Controllers
             return View(viewModel);
         }
 
+        [Authorize(Policy = "Beta")]
+        //[Authorize(Policy = "MustOwnPhoto")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditPhoto(EditPhotoModel editPhotoModel)
@@ -123,6 +136,7 @@ namespace PhotosApp.Controllers
         }
 
         [HttpPost]
+        //[Authorize(Policy = "MustOwnPhoto")]
         public async Task<IActionResult> DeletePhoto(Guid id)
         {
             var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
@@ -137,7 +151,7 @@ namespace PhotosApp.Controllers
 
         private string GetOwnerId()
         {
-            return "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd";
+            return User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
     }
 }

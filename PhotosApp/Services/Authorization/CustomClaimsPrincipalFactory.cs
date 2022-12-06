@@ -6,27 +6,29 @@ using Microsoft.Extensions.Options;
 
 namespace PhotosApp.Services.Authorization
 {
-    public class CustomClaimsPrincipalFactory : UserClaimsPrincipalFactory<IdentityUser, IdentityRole>
+    using Areas.Identity.Data;
+
+    public class CustomClaimsPrincipalFactory : UserClaimsPrincipalFactory<PhotosAppUser, IdentityRole>
     {
         public CustomClaimsPrincipalFactory(
-            UserManager<IdentityUser> userManager,
+            UserManager<PhotosAppUser> userManager,
             RoleManager<IdentityRole> roleManager,
             IOptions<IdentityOptions> optionsAccessor)
             : base(userManager, roleManager, optionsAccessor)
         { }
 
-        public override async Task<ClaimsPrincipal> CreateAsync(IdentityUser user)
+        public override async Task<ClaimsPrincipal> CreateAsync(PhotosAppUser user)
         {
             var principal = await base.CreateAsync(user);
             var claimsIdentity = (ClaimsIdentity)principal.Identity;
 
-            // NOTE: Вот так можно добавить claim
-            // claimsIdentity.AddClaims(new[]
-            // {
-            //     new Claim("type", "value")
-            // });
-
-            throw new NotImplementedException();
+            if (user.Paid)
+            {
+                claimsIdentity?.AddClaims(new[]
+                {
+                    new Claim("subscription ", "paid")
+                });
+            }
 
             return principal;
         }
