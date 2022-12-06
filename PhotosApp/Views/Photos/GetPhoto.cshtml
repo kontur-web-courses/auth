@@ -1,4 +1,8 @@
-﻿@model GetPhotoModel
+﻿@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+
+
+@model GetPhotoModel
 @{
     ViewData["Title"] = "Фото";
 }
@@ -10,7 +14,11 @@
     <div>
         <div class="h5">@Model.Photo.Title</div>
         <div class="bottomMargin">
-            <a asp-controller="Photos" asp-action="EditPhoto" asp-route-id="@Model.Photo.Id">Изменить подпись</a>
+            <a asp-controller="Photos" 
+               asp-action="EditPhoto" 
+               asp-route-id="@Model.Photo.Id" 
+               hidden="@(!(await AuthorizationService.AuthorizeAsync(User, "Beta")).Succeeded)"
+               >Изменить подпись</a>
             <text>&nbsp;</text>
             <form class="inline-block" onsubmit="return confirm('Удалить фото?')"
                 asp-controller="Photos" asp-action="DeletePhoto" asp-route-id="@Model.Photo.Id">

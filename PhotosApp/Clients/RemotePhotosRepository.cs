@@ -13,6 +13,7 @@ using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using IdentityModel.Client;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
 
 namespace PhotosApp.Clients
@@ -27,6 +28,30 @@ namespace PhotosApp.Clients
             serviceUrl = options.Value.ServiceUrl;
             this.mapper = mapper;
         }
+        
+        private static async Task<string> GetAccessTokenByClientCredentialsAsync()
+        {
+            var httpClient = new HttpClient();
+            // NOTE: ÐÐ¾Ð»ÑÑÐµÐ½Ð¸Ðµ Ð¸Ð½ÑÐ¾ÑÐ¼Ð°ÑÐ¸Ð¸ Ð¾ ÑÐµÑÐ²ÐµÑÐµ Ð°Ð²ÑÐ¾ÑÐ¸Ð·Ð°ÑÐ¸Ð¸, Ð² ÑÐ°ÑÑÐ½Ð¾ÑÑÐ¸, Ð°Ð´ÑÐµÑÐ° token endpoint.
+            var disco = await httpClient.GetDiscoveryDocumentAsync("https://localhost:7001");
+            if (disco.IsError)
+                throw new Exception(disco.Error);
+
+            // NOTE: ÐÐ¾Ð»ÑÑÐµÐ½Ð¸Ðµ access token Ð¿Ð¾ ÑÐµÐºÐ²Ð¸Ð·Ð¸ÑÐ°Ð¼ ÐºÐ»Ð¸ÐµÐ½ÑÐ°
+            var tokenResponse = await httpClient.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
+            {
+                Address = disco.TokenEndpoint,
+                ClientId = "Photos App by OAuth",
+                ClientSecret = "secret",
+                Scope = "photos"
+            });
+
+            if (tokenResponse.IsError)
+                throw new Exception(tokenResponse.Error);
+
+            return tokenResponse.AccessToken;
+        }
+
 
         public async Task<IEnumerable<PhotoEntity>> GetPhotosAsync(string ownerId)
         {
@@ -200,6 +225,8 @@ namespace PhotosApp.Clients
         private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
         {
             var httpClient = new HttpClient();
+            var accessToken =  await GetAccessTokenByClientCredentialsAsync();
+            httpClient.SetBearerToken(accessToken);
             var response = await httpClient.SendAsync(request);
             return response;
         }
