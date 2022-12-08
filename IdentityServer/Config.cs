@@ -15,7 +15,12 @@ namespace IdentityServer
             { 
                 new IdentityResources.OpenId(),
                 new IdentityResources.Profile(),
-                new IdentityResources.Email()
+                new IdentityResources.Email(),
+                new IdentityResource("photos_app", "Web Photos", new []
+                {
+                    "role", "subscription", "testing"
+                })
+
 
             };
 
@@ -24,7 +29,8 @@ namespace IdentityServer
             {
                 new ApiResource("photos_service", "Сервис фотографий")
                 {
-                    Scopes = { "photos" }
+                    Scopes = { "photos" },
+                    ApiSecrets = { new Secret("photos_service_secret".Sha256()) },
                 }
             };
 
@@ -50,34 +56,57 @@ namespace IdentityServer
                 },
                 
                 new Client
-                {
-                ClientId = "Photos App by OIDC",
-                ClientSecrets = { new Secret("secret".Sha256()) },
-
-                AllowedGrantTypes = GrantTypes.Code,
-        
-                 RequireConsent = false,
-
-                // NOTE: ÐºÑÐ´Ð° Ð¾ÑÐ¿ÑÐ°Ð²Ð»ÑÑÑ Ð¿Ð¾ÑÐ»Ðµ Ð»Ð¾Ð³Ð¸Ð½Ð°
-                RedirectUris = { "https://localhost:5001/signin-passport" },
-
-                AllowedScopes = new List<string>
-                {
-                    // NOTE: ÐÐ¾Ð·Ð²Ð¾Ð»ÑÐµÑ Ð·Ð°Ð¿ÑÐ°ÑÐ¸Ð²Ð°ÑÑ id token
-                    IdentityServerConstants.StandardScopes.OpenId,
-                    // NOTE: ÐÐ¾Ð·Ð²Ð¾Ð»ÑÐµÑ Ð·Ð°Ð¿ÑÐ°ÑÐ¸Ð²Ð°ÑÑ Ð¿ÑÐ¾ÑÐ¸Ð»Ñ Ð¿Ð¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ñ ÑÐµÑÐµÐ· id token
-                    IdentityServerConstants.StandardScopes.Profile,
-                    // NOTE: ÐÐ¾Ð·Ð²Ð¾Ð»ÑÐµÑ Ð·Ð°Ð¿ÑÐ°ÑÐ¸Ð²Ð°ÑÑ email Ð¿Ð¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ñ ÑÐµÑÐµÐ· id token
-                    IdentityServerConstants.StandardScopes.Email
+                { 
+                    ClientId = "Photos App by OIDC", 
+                    ClientSecrets = { new Secret("secret".Sha256()) },
+                    
+                    AllowedGrantTypes = GrantTypes.Code, 
+                    PostLogoutRedirectUris = { "https://localhost:5001/signout-callback-passport" },
+                    AllowOfflineAccess = true,
+                    
+                    RequireConsent = true, 
+                    RedirectUris = { "https://localhost:5001/signin-passport" },
+                    
+                    AllowedScopes = new List<string> 
+                    {
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        IdentityServerConstants.StandardScopes.Profile,
+                        IdentityServerConstants.StandardScopes.Email,
+                        "photos_app",
+                        "photos" 
+                    }, 
+                    AlwaysIncludeUserClaimsInIdToken = true, 
+                    AccessTokenLifetime = 30,
                 },
+                new Client 
+                { 
+                    ClientId = "Photos SPA", 
+                    RequireClientSecret = false, 
+                    RequirePkce = true,
 
-                // NOTE: ÐÐ°Ð´Ð¾ Ð»Ð¸ Ð´Ð¾Ð±Ð°Ð²Ð»ÑÑÑ Ð¸Ð½ÑÐ¾ÑÐ¼Ð°ÑÐ¸Ñ Ð¾ Ð¿Ð¾Ð»ÑÐ·Ð¾Ð²Ð°ÑÐµÐ»Ðµ Ð² id token Ð¿ÑÐ¸ Ð·Ð°Ð¿ÑÐ¾ÑÐµ Ð¾Ð´Ð½Ð¾Ð²ÑÐµÐ¼ÐµÐ½Ð½Ð¾
-                // id token Ð¸ access token, ÐºÐ°Ðº ÑÑÐ¾ Ð¿ÑÐ¾Ð¸ÑÑ
-                // ÐÐ¸Ð±Ð¾ Ð¿ÑÐ¸Ð´ÐµÑÑÑ ÐµÐµ Ð¿Ð¾Ð»ÑÑÐ°ÑÑ Ð¾ÑÐ´ÐµÐ»ÑÐ½Ð¾ ÑÐµÑÐµÐ· user info endpoint.
-                AlwaysIncludeUserClaimsInIdToken = true,
-                }
+                    AllowedGrantTypes = GrantTypes.Code,
 
+                    AccessTokenLifetime = 2*60,
 
+                    RequireConsent = false,
+
+                    RedirectUris = { "https://localhost:8001/authentication/login-callback" },
+
+                    PostLogoutRedirectUris = { "https://localhost:8001/authentication/logout-callback" },
+
+                    AllowedCorsOrigins = { "https://localhost:8001" },
+
+                    AllowedScopes = new List<string>
+                    {
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        IdentityServerConstants.StandardScopes.Profile,
+                        IdentityServerConstants.StandardScopes.Email,
+                        "photos"
+                    },
+
+                    AlwaysIncludeUserClaimsInIdToken = true, 
+                    AllowOfflineAccess = false, 
+                } 
             };
         
     }
