@@ -39,6 +39,14 @@ namespace PhotosApp.Areas.Identity
                     // .AddEntityFrameworkStores<TicketsDbContext>()
                     .AddErrorDescriber<RussianIdentityErrorDescriber>();
                 
+                services.ConfigureExternalCookie(options =>
+                {
+                    options.Cookie.Name = "PhotosApp.Auth.External";
+                    options.Cookie.HttpOnly = true;
+                    options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+                    options.SlidingExpiration = true;
+                });
+                
                 services.Configure<IdentityOptions>(options =>
                 {
                     // Default Password settings.
@@ -54,7 +62,7 @@ namespace PhotosApp.Areas.Identity
                 services.ConfigureApplicationCookie(options =>
                 {
                     var serviceProvider = services.BuildServiceProvider();
-                    options.SessionStore = serviceProvider.GetRequiredService<ITicketStore>();
+                    // options.SessionStore = serviceProvider.GetRequiredService<ITicketStore>();
                     
                     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
                     options.Cookie.Name = "PhotosApp.Auth";
@@ -98,18 +106,40 @@ namespace PhotosApp.Areas.Identity
                         policyBuilder =>
                         {
                             policyBuilder.RequireRole("Dev");
-                            policyBuilder.AddAuthenticationSchemes(
-                                JwtBearerDefaults.AuthenticationScheme,
-                                IdentityConstants.ApplicationScheme);
+                            // policyBuilder.AddAuthenticationSchemes(
+                            //     JwtBearerDefaults.AuthenticationScheme,
+                            //     IdentityConstants.ApplicationScheme);
                         });
                 });
 
-                services.AddAuthentication()
-                    .AddGoogle("Google", options =>
+                services.AddAuthentication(/*o =>
                     {
-                        // todo uncomment
-                        options.ClientId = context.Configuration["Authentication:Google:ClientId"];
-                        options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
+                        o.DefaultScheme = IdentityConstants.ApplicationScheme;
+                        o.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+                    }*/)
+                    // .AddGoogle("Google", options =>
+                    // {
+                    //     options.ClientId = context.Configuration["Authentication:Google:ClientId"];
+                    //     options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
+                    // });
+                    .AddOpenIdConnect("Passport", "Паспорт", options =>
+                    {
+                        options.Authority = "https://localhost:7001";
+
+                        options.ClientId = "Photos App by OIDC";
+                        options.ClientSecret = "secret";
+                        options.ResponseType = "code";
+
+                        // NOTE: oidc и profile уже добавлены по умолчанию
+                        options.Scope.Add("email");
+
+                        options.CallbackPath = "/signin-passport";
+
+                        // NOTE: все эти проверки токена выполняются по умолчанию, указаны для ознакомления
+                        options.TokenValidationParameters.ValidateIssuer = true; // проверка издателя
+                        options.TokenValidationParameters.ValidateAudience = true; // проверка получателя
+                        options.TokenValidationParameters.ValidateLifetime = true; // проверка не протух ли
+                        options.TokenValidationParameters.RequireSignedTokens = true; // есть ли валидная подпись издателя
                     });
 
                 services.AddTransient<IEmailSender, SimpleEmailSender>(serviceProvider =>
