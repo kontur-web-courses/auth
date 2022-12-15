@@ -9,7 +9,7 @@ using PhotosApp.Services.TicketStores;
 namespace PhotosApp.Migrations.TicketsDb
 {
     [DbContext(typeof(TicketsDbContext))]
-    [Migration("20221128192604_Tickets")]
+    [Migration("20211206133833_Tickets")]
     partial class Tickets
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

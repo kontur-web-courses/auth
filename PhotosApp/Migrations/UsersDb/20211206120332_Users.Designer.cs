@@ -9,7 +9,7 @@ using PhotosApp.Areas.Identity.Data;
 namespace PhotosApp.Migrations.UsersDb
 {
     [DbContext(typeof(UsersDbContext))]
-    [Migration("20221122102809_Users")]
+    [Migration("20211206120332_Users")]
     partial class Users
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
