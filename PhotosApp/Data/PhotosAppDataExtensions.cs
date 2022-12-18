@@ -25,19 +25,19 @@ namespace PhotosApp.Data
                     if (env.IsDevelopment())
                     {
                         scope.ServiceProvider.GetRequiredService<PhotosDbContext>().Database.Migrate();
-                        scope.ServiceProvider.GetRequiredService<TicketsDbContext>().Database.Migrate();
-                        scope.ServiceProvider.GetRequiredService<UsersDbContext>().Database.Migrate();
+                        // scope.ServiceProvider.GetRequiredService<TicketsDbContext>().Database.Migrate();
+                        // scope.ServiceProvider.GetRequiredService<UsersDbContext>().Database.Migrate();
 
                         var photosDbContext = scope.ServiceProvider.GetRequiredService<PhotosDbContext>();
                         photosDbContext.SeedWithSamplePhotosAsync().Wait();
 
-                        scope.ServiceProvider.GetService<RoleManager<IdentityRole>>().SeedWithSampleRolesAsync().Wait();
+                        // scope.ServiceProvider.GetService<RoleManager<IdentityRole>>().SeedWithSampleRolesAsync().Wait();
                         
-                        scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>()
-                            .SeedWithSampleUsersAsync()
-                            .Wait();
-                        scope.ServiceProvider.GetRequiredService<TicketsDbContext>().SeedWithSampleTicketsAsync()
-                            .Wait();
+                        // scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>()
+                        //     .SeedWithSampleUsersAsync()
+                        //     .Wait();
+                        // scope.ServiceProvider.GetRequiredService<TicketsDbContext>().SeedWithSampleTicketsAsync()
+                        //     .Wait();
                     }
                 }
                 catch (Exception e)
