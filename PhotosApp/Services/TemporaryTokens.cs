@@ -17,9 +17,9 @@ namespace PhotosApp.Services
         {
             var claims = new Claim[]
             {
-                new("ClaimTypes.NameIdentifier", Guid.NewGuid().ToString()),
-                new("ClaimsIdentity.DefaultNameClaimType", "OhItIsName"),
-                new("ClaimsIdentity.DefaultRoleClaimType", "Dev")
+                new(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
+                new(ClaimsIdentity.DefaultNameClaimType, "OhItIsName"),
+                new(ClaimsIdentity.DefaultRoleClaimType, "Dev")
             };
 
             var jwt = new JwtSecurityToken(
