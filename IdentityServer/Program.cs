@@ -8,6 +8,7 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 using System;
+using IdentityServer.Data;
 
 namespace IdentityServer
 {
@@ -32,6 +33,8 @@ namespace IdentityServer
                 Log.Information("Building web host");
                 var host = hostBuilder.Build();
                 Log.Information("Running web host");
+                Log.Information("Preparing data");
+                host.PrepareData();
                 host.Run();
                 return 0;
             }

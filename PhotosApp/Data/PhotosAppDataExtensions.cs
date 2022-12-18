@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Services.TicketStores;
 
 namespace PhotosApp.Data
@@ -22,11 +24,24 @@ namespace PhotosApp.Data
                     var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
                     if (env.IsDevelopment())
                     {
-                        scope.ServiceProvider.GetRequiredService<PhotosDbContext>().Database.Migrate();
 
-                        var photosDbContext = scope.ServiceProvider.GetRequiredService<PhotosDbContext>();
-                        photosDbContext.SeedWithSamplePhotosAsync().Wait();
+                        var photosDb = scope.ServiceProvider.GetRequiredService<PhotosDbContext>();
+                        // var usersDb = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
+                        // var ticketsDb = scope.ServiceProvider.GetRequiredService<TicketsDbContext>();
+                        
+                        photosDb.Database.Migrate();
+                        // usersDb.Database.Migrate();
+                        // ticketsDb.Database.Migrate();
+                        
+                        photosDb.SeedWithSamplePhotosAsync().Wait();
+                        // ticketsDb.SeedWithSampleTicketsAsync().Wait();
                     }
+
+                    // var roleManager = scope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
+                    // roleManager.SeedWithSampleRolesAsync().Wait();
+                    
+                    // var userManager = scope.ServiceProvider.GetService<UserManager<PhotosAppUser>>();
+                    // userManager.SeedWithSampleUsersAsync().Wait();
                 }
                 catch (Exception e)
                 {
@@ -134,75 +149,77 @@ namespace PhotosApp.Data
             await dbContext.SaveChangesAsync();
         }
 
-        private static async Task SeedWithSampleTicketsAsync(this TicketsDbContext dbContext)
-        {
-            dbContext.Tickets.RemoveRange(dbContext.Tickets);
-            await dbContext.SaveChangesAsync();
-        }
+        // private static async Task SeedWithSampleTicketsAsync(this TicketsDbContext dbContext)
+        // {
+        //     dbContext.Tickets.RemoveRange(dbContext.Tickets);
+        //     await dbContext.SaveChangesAsync();
+        // }
 
-        private static async Task SeedWithSampleUsersAsync<TUser>(this UserManager<TUser> userManager)
-            where TUser : IdentityUser, new()
-        {
-            // NOTE: ToList важен, так как при удалении пользователя меняется список пользователей
-            foreach (var user in userManager.Users.ToList())
-                await userManager.DeleteAsync(user);
+        // private static async Task SeedWithSampleUsersAsync(this UserManager<PhotosAppUser> userManager)
+        // {
+        //     // NOTE: ToList важен, так как при удалении пользователя меняется список пользователей
+        //     foreach (var user in userManager.Users.ToList())
+        //         await userManager.DeleteAsync(user);
+        //
+        //     {
+        //         var user = new PhotosAppUser
+        //         {
+        //             Id = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd",
+        //             UserName = "vicky@gmail.com",
+        //             Email = "vicky@gmail.com"
+        //         };
+        //         await userManager.RegisterUserIfNotExists(user, "Pass!2");
+        //         await userManager.AddClaimAsync(user, new Claim("testing", "beta"));
+        //     }
+        //
+        //     {
+        //         var user = new PhotosAppUser
+        //         {
+        //             Id = "dcaec9ce-91c9-4105-8d4d-eee3365acd82",
+        //             UserName = "cristina@gmail.com",
+        //             Email = "cristina@gmail.com",
+        //             Paid = true
+        //         };
+        //         await userManager.RegisterUserIfNotExists(user, "Pass!2");
+        //     }
+        //
+        //     {
+        //         var user = new PhotosAppUser
+        //         {
+        //             Id = "b9991f69-b4c1-477d-9432-2f7cf6099e02",
+        //             UserName = "dev@gmail.com",
+        //             Email = "dev@gmail.com"
+        //         };
+        //         await userManager.RegisterUserIfNotExists(user, "Pass!2");
+        //         await userManager.AddToRoleAsync(user, "Dev");
+        //     }
+        // }
 
-            {
-                var user = new TUser
-                {
-                    Id = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd",
-                    UserName = "vicky@gmail.com",
-                    Email = "vicky@gmail.com"
-                };
-                await userManager.RegisterUserIfNotExists(user, "Pass!2");
-            }
+        // private static async Task RegisterUserIfNotExists<TUser>(this UserManager<TUser> userManager,
+        //     TUser user, string password)
+        //     where TUser : IdentityUser<string>
+        // {
+        //     if (await userManager.FindByNameAsync(user.UserName) == null)
+        //     {
+        //         var result = await userManager.CreateAsync(user, password);
+        //         if (result.Succeeded)
+        //         {
+        //             var code = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        //             await userManager.ConfirmEmailAsync(user, code);
+        //         }
+        //     }
+        // }
 
-            {
-                var user = new TUser
-                {
-                    Id = "dcaec9ce-91c9-4105-8d4d-eee3365acd82",
-                    UserName = "cristina@gmail.com",
-                    Email = "cristina@gmail.com"
-                };
-                await userManager.RegisterUserIfNotExists(user, "Pass!2");
-            }
-
-            {
-                var user = new TUser
-                {
-                    Id = "b9991f69-b4c1-477d-9432-2f7cf6099e02",
-                    UserName = "dev@gmail.com",
-                    Email = "dev@gmail.com"
-                };
-                await userManager.RegisterUserIfNotExists(user, "Pass!2");
-            }
-        }
-
-        private static async Task RegisterUserIfNotExists<TUser>(this UserManager<TUser> userManager,
-            TUser user, string password)
-            where TUser : IdentityUser<string>
-        {
-            if (await userManager.FindByNameAsync(user.UserName) == null)
-            {
-                var result = await userManager.CreateAsync(user, password);
-                if (result.Succeeded)
-                {
-                    var code = await userManager.GenerateEmailConfirmationTokenAsync(user);
-                    await userManager.ConfirmEmailAsync(user, code);
-                }
-            }
-        }
-
-        private static async Task SeedWithSampleRolesAsync(this RoleManager<IdentityRole> roleManager)
-        {
-            // NOTE: ToList важен, так как при удалении роли меняется список ролей
-            foreach (var role in roleManager.Roles.ToList())
-                await roleManager.DeleteAsync(role);
-
-            {
-                var role = new IdentityRole { Name = "Dev" };
-                await roleManager.CreateAsync(role);
-            }
-        }
+        // private static async Task SeedWithSampleRolesAsync(this RoleManager<IdentityRole> roleManager)
+        // {
+        //     // NOTE: ToList важен, так как при удалении роли меняется список ролей
+        //     foreach (var role in roleManager.Roles.ToList())
+        //         await roleManager.DeleteAsync(role);
+        //
+        //     {
+        //         var role = new IdentityRole { Name = "Dev" };
+        //         await roleManager.CreateAsync(role);
+        //     }
+        // }
     }
 }
