@@ -1,4 +1,7 @@
-﻿@model PhotoIndexModel
+﻿@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+
+@model PhotoIndexModel
 @{
     ViewData["Title"] = "Все фото";
 }
@@ -28,11 +31,14 @@
             @if (User.Identity.IsAuthenticated)
             {
                 <text>Ничего не найдено...</text>
-                <text>&nbsp;<a asp-controller="Photos" asp-action="AddPhoto">Загрузите</a>&nbsp; свои фото</text>
+                @if ((await AuthorizationService.AuthorizeAsync(User, "CanAddPhoto")).Succeeded)
+                {
+                    <text>&nbsp;<a asp-controller="Photos" asp-action="AddPhoto">Загрузите</a>&nbsp; свои фото</text>
+                }
             }
             else
             {
-                <text><a asp-area="Identity" asp-page="/Account/Login">Войдите</a>, чтобы увидеть свои фото</text>
+                <text><a asp-controller="Passport" asp-action="Login" asp-route-rememberMe="true">Войдите</a>, чтобы увидеть свои фото</text>
             }
         </div>
     }
