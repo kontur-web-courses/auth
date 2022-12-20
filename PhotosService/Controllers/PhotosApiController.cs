@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -35,8 +36,12 @@ namespace PhotosService.Controllers
         }
 
         [HttpGet("{id}/meta")]
-        public async Task<IActionResult> GetPhotoMeta(Guid id)
+        public async Task<IActionResult> GetPhotoMeta(Guid id, JwtSecurityToken accessToken)
         {
+            var tokenCheckingResult = await TokenCheckingResult(id, accessToken);
+            if (tokenCheckingResult != null)
+                return tokenCheckingResult;
+            
             var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
             if (photoEntity == null)
                 return NotFound();
@@ -47,8 +52,12 @@ namespace PhotosService.Controllers
         }
 
         [HttpGet("{id}/content")]
-        public async Task<IActionResult> GetPhotoContent(Guid id)
+        public async Task<IActionResult> GetPhotoContent(Guid id, JwtSecurityToken accessToken)
         {
+            var tokenCheckingResult = await TokenCheckingResult(id, accessToken);
+            if (tokenCheckingResult != null)
+                return tokenCheckingResult;
+            
             var photoContent = await photosRepository.GetPhotoContentAsync(id);
             if (photoContent == null)
                 return NotFound();
@@ -81,8 +90,12 @@ namespace PhotosService.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePhoto(Guid id)
+        public async Task<IActionResult> DeletePhoto(Guid id, JwtSecurityToken accessToken)
         {
+            var tokenCheckingResult = await TokenCheckingResult(id, accessToken);
+            if (tokenCheckingResult != null)
+                return tokenCheckingResult;
+            
             var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
             if (photoEntity == null)
                 return NotFound();
@@ -100,6 +113,15 @@ namespace PhotosService.Controllers
             });
             var url = "https://localhost:6001" + relativeUrl;
             return url;
+        }
+
+        private async Task<ActionResult> TokenCheckingResult(Guid id, JwtSecurityToken accessToken)
+        {
+            var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
+            if (photoEntity == null)
+                return NotFound();
+
+            return accessToken.Subject != photoEntity.OwnerId ? Forbid() : null;
         }
     }
 }
