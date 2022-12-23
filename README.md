@@ -672,8 +672,7 @@ options.ClientSecret = configuration["Authentication:Google:ClientSecret"];
 
 Для этого:
 
-Google любит обновлять интерфейс, но шаги выглядят примерно так:
-Они выглядят примерно так
+Google любит обновлять интерфейс, но шаги выглядят примерно так:  
 1. Перейди на страницу https://developers.google.com/identity/sign-in/web/sign-in#create_authorization_credentials 
 2. Перейди по ссылке «Credentials page»
 3. Нажми на кнопку «Create credentials» и выбери «OAuth client ID» из выпадающего меню

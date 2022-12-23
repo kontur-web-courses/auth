@@ -27,7 +27,7 @@ namespace PhotosApp.Services
             string userName, string password)
         {
             this.logger = logger;
-            this.env = hostingEnvironment;
+            env = hostingEnvironment;
             this.host = host;
             this.port = port;
             this.enableSSL = enableSSL;
@@ -66,7 +66,7 @@ namespace PhotosApp.Services
                     {
                         IsBodyHtml = true
                     }
-                );
+                ).ConfigureAwait(false);
             }
         }
     }

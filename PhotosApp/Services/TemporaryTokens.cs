@@ -8,8 +8,7 @@ namespace PhotosApp.Services
 {
     public static class TemporaryTokens
     {
-        public static SymmetricSecurityKey SigningKey =>
-            new SymmetricSecurityKey(Encoding.ASCII.GetBytes("Ne!0_0!vzlomayesh!^_^!nikogda!"));
+        public static SymmetricSecurityKey SigningKey => new(Encoding.ASCII.GetBytes("Ne!0_0!vzlomayesh!^_^!nikogda!"));
 
         public const string CookieName = "TemporaryToken";
 
@@ -17,13 +16,16 @@ namespace PhotosApp.Services
         {
             var claims = new Claim[]
             {
+                new(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
+                new (ClaimsIdentity.DefaultNameClaimType, "default"),
+                new (ClaimsIdentity.DefaultRoleClaimType, "Dev")
             };
 
             var jwt = new JwtSecurityToken(
                 claims: claims,
-                notBefore: null,
-                expires: null,
-                signingCredentials: null);
+                notBefore: DateTime.Now.ToUniversalTime(),
+                expires: DateTime.Now.ToUniversalTime() + TimeSpan.FromSeconds(30),
+                signingCredentials: new SigningCredentials(SigningKey, SecurityAlgorithms.HmacSha256));
             var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
 
             return encodedJwt;

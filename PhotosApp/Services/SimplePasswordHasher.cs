@@ -13,22 +13,27 @@ namespace PhotosApp.Services
         private const int SaltSizeInBits = 128;
         private const int HashSizeInBits = 256;
 
-        public string HashPassword(TUser user, string password)
+        private string HashPasswordWithSalt(TUser user, string password, byte[] saltBytes = null)
         {
-            byte[] saltBytes = GenerateSaltBytes();
+            saltBytes ??= GenerateSaltBytes();
             byte[] hashBytes = GetHashBytes(password, saltBytes);
             byte[] hashedPasswordBytes = ConcatenateBytes(saltBytes, hashBytes);
             string hashedPassword = Convert.ToBase64String(hashedPasswordBytes);
             return hashedPassword;
         }
 
+        public string HashPassword(TUser user, string password)
+        {
+            return HashPasswordWithSalt(user, password);
+        }
+
         public PasswordVerificationResult VerifyHashedPassword(TUser user,
             string hashedPassword, string providedPassword)
         {
-            byte[] expectedHashBytes = null;
-            byte[] actualHashBytes = null;
-
-            throw new NotImplementedException();
+            byte[] expectedHashBytes = Convert.FromBase64String(hashedPassword);
+            byte[] saltBytes = expectedHashBytes[0..(SaltSizeInBits / 8)];
+            string providedPasswordHashed = HashPasswordWithSalt(user, providedPassword, saltBytes);
+            byte[] actualHashBytes = Convert.FromBase64String(providedPasswordHashed);
 
             // Если providedPassword корректен, то в результате хэширования его с той же самой солью,
             // что и оригинальный пароль, должен получаться тот же самый хэш.
