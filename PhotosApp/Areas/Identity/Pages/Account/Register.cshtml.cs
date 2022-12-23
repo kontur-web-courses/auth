@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using PhotosApp.Areas.Identity.Data;
 
 namespace PhotosApp.Areas.Identity.Pages.Account
@@ -46,7 +47,7 @@ namespace PhotosApp.Areas.Identity.Pages.Account
 
         public class InputModel
         {
-            [Required(ErrorMessage = "Поле email является обязательным.")]
+            [Required(ErrorMessage = "Введите email")]
             [EmailAddress]
             [Display(Name = "Email")]
             public string Email { get; set; }

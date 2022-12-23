@@ -14,6 +14,7 @@ namespace PhotosApp.Areas.Identity.Data
         public UsersDbContext(DbContextOptions<UsersDbContext> options)
             : base(options)
         {
+            Database.Migrate();
         }
 
         protected override void OnModelCreating(ModelBuilder builder)

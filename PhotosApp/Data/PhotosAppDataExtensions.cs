@@ -25,20 +25,18 @@ namespace PhotosApp.Data
                     if (env.IsDevelopment())
                     {
                         scope.ServiceProvider.GetRequiredService<PhotosDbContext>().Database.Migrate();
-                        scope.ServiceProvider.GetRequiredService<UsersDbContext>().Database.Migrate();
-                        scope.ServiceProvider.GetRequiredService<TicketsDbContext>().Database.Migrate();
-
+                        /*
+                        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                        SeedWithSampleRolesAsync(roleManager).Wait();
+                        */
                         var photosDbContext = scope.ServiceProvider.GetRequiredService<PhotosDbContext>();
                         photosDbContext.SeedWithSamplePhotosAsync().Wait();
-
-                        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-                        roleManager.SeedWithSampleRolesAsync().Wait();
-
-                        var usersManager = scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>();
-                        usersManager.SeedWithSampleUsersAsync().Wait();
-
-                        var ticketsDbContext = scope.ServiceProvider.GetRequiredService<TicketsDbContext>();
-                        ticketsDbContext.SeedWithSampleTicketsAsync().Wait();
+                        /*
+                        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>();
+                        userManager.SeedWithSampleUsersAsync().Wait();
+                        */
+                        /*var ticketsDbContext = scope.ServiceProvider.GetRequiredService<TicketsDbContext>();
+                        SeedWithSampleTicketsAsync(ticketsDbContext).Wait();*/
                     }
                 }
                 catch (Exception e)
@@ -166,7 +164,7 @@ namespace PhotosApp.Data
                     UserName = "vicky@gmail.com",
                     Email = "vicky@gmail.com"
                 };
-                await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                await userManager.RegisterUserIfNotExists(user, "Pass!1");
                 await userManager.AddClaimAsync(user, new Claim("testing", "beta"));
             }
 

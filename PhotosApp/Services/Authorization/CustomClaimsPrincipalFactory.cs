@@ -22,10 +22,9 @@ namespace PhotosApp.Services.Authorization
             var claimsIdentity = (ClaimsIdentity)principal.Identity;
 
             if (user.Paid)
-                claimsIdentity.AddClaims(new[]
-                {
-                    new Claim("subscription", "paid")
-                });
+            {
+                claimsIdentity.AddClaim(new Claim("subscription", "paid"));
+            }
 
             return principal;
         }

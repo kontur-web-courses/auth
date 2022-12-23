@@ -36,7 +36,7 @@ namespace PhotosApp.Controllers
             return View(model);
         }
 
-        [Authorize(Policy = "MustOwnPhoto")]
+        //[Authorize(Policy = "MustOwnPhoto")]
         public async Task<IActionResult> GetPhoto(Guid id)
         {
             var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
@@ -49,10 +49,11 @@ namespace PhotosApp.Controllers
             return View(model);
         }
 
-        [Authorize(Policy = "MustOwnPhoto")]
         [HttpGet("photos/{id}")]
+       // [Authorize(Policy = "MustOwnPhoto")]
         public async Task<IActionResult> GetPhotoFile(Guid id)
         {
+            Console.WriteLine("here");
             var photoContent = await photosRepository.GetPhotoContentAsync(id);
             if (photoContent == null)
                 return NotFound();
@@ -60,14 +61,15 @@ namespace PhotosApp.Controllers
             return File(photoContent.Content, photoContent.ContentType, photoContent.FileName);
         }
 
-        [Authorize(Policy = "CanAddPhoto")]
+
+        [HttpGet("photos/addphoto")]
         public IActionResult AddPhoto()
         {
             return View();
         }
 
-        [Authorize(Policy = "CanAddPhoto")]
         [HttpPost]
+        [Authorize(Policy = "CanAddPhoto")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddPhoto(AddPhotoModel addPhotoModel)
         {
@@ -97,8 +99,8 @@ namespace PhotosApp.Controllers
             return RedirectToAction("Index");
         }
 
-        [Authorize(Policy = "MustOwnPhoto")]
-        [Authorize(Policy = "CanAddPhoto")]
+        [Authorize(Policy = "Beta")]
+       // [Authorize(Policy = "MustOwnPhoto")]
         public async Task<IActionResult> EditPhoto(Guid id)
         {
             var photo = await photosRepository.GetPhotoMetaAsync(id);
@@ -113,10 +115,9 @@ namespace PhotosApp.Controllers
             return View(viewModel);
         }
 
-        [Authorize(Policy = "MustOwnPhoto")]
-        [Authorize(Policy = "CanAddPhoto")]
         [HttpPost]
         [ValidateAntiForgeryToken]
+       // [Authorize(Policy = "MustOwnPhoto")]
         public async Task<IActionResult> EditPhoto(EditPhotoModel editPhotoModel)
         {
             if (editPhotoModel == null || !ModelState.IsValid)
@@ -134,9 +135,8 @@ namespace PhotosApp.Controllers
             return RedirectToAction("Index");
         }
 
-        [Authorize(Policy = "MustOwnPhoto")]
-        [Authorize(Policy = "CanAddPhoto")]
         [HttpPost]
+       //[Authorize(Policy = "MustOwnPhoto")]
         public async Task<IActionResult> DeletePhoto(Guid id)
         {
             var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
