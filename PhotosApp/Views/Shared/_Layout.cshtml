@@ -1,4 +1,7 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -31,15 +34,18 @@
                             <a class="nav-link" asp-area="" asp-controller="Photos" asp-action="Index">Все фото</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Photos" asp-action="AddPhoto">Добавить фото</a>
+                            <a class="nav-link" asp-area="" asp-controller="Photos" asp-action="AddPhoto"
+                               hidden="@(!(await AuthorizationService.AuthorizeAsync(User, "CanAddPhoto")).Succeeded)">Добавить фото</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Dev" asp-action="Decode" title="Decode">Decode</a>
+                            <a class="nav-link" asp-controller="Dev" asp-action="Decode" hidden="@(!(await AuthorizationService.AuthorizeAsync(User, "Dev")).Succeeded)" title="Decode">Decode</a>
                         </li>
                     </ul>
+                    <partial name="_LoginPartial"/>
                 </div>
             </div>
         </nav>
+
     </header>
     
     <div class="container">

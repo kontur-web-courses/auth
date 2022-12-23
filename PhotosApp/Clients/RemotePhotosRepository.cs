@@ -13,6 +13,13 @@ using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using IdentityModel.Client;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
+using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
 
 namespace PhotosApp.Clients
@@ -21,12 +28,40 @@ namespace PhotosApp.Clients
     {
         private readonly string serviceUrl;
         private readonly IMapper mapper;
+        private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IConfigurationManager<OpenIdConnectConfiguration> oidcConfigurationManager;
 
-        public RemotePhotosRepository(IOptions<PhotosServiceOptions> options, IMapper mapper)
+        public RemotePhotosRepository(IOptions<PhotosServiceOptions> options, IMapper mapper, IHttpContextAccessor httpContextAccessor, IConfigurationManager<OpenIdConnectConfiguration> oidcConfigurationManager)
         {
             serviceUrl = options.Value.ServiceUrl;
             this.mapper = mapper;
+            this.httpContextAccessor = httpContextAccessor;
+            this.oidcConfigurationManager = oidcConfigurationManager;
         }
+        
+        private static async Task<string> GetAccessTokenByClientCredentialsAsync()
+        {
+            var httpClient = new HttpClient();
+            // NOTE: ÐÐ¾Ð»ÑÑÐµÐ½Ð¸Ðµ Ð¸Ð½ÑÐ¾ÑÐ¼Ð°ÑÐ¸Ð¸ Ð¾ ÑÐµÑÐ²ÐµÑÐµ Ð°Ð²ÑÐ¾ÑÐ¸Ð·Ð°ÑÐ¸Ð¸, Ð² ÑÐ°ÑÑÐ½Ð¾ÑÑÐ¸, Ð°Ð´ÑÐµÑÐ° token endpoint.
+            var disco = await httpClient.GetDiscoveryDocumentAsync("https://localhost:7001");
+            if (disco.IsError)
+                throw new Exception(disco.Error);
+
+            // NOTE: ÐÐ¾Ð»ÑÑÐµÐ½Ð¸Ðµ access token Ð¿Ð¾ ÑÐµÐºÐ²Ð¸Ð·Ð¸ÑÐ°Ð¼ ÐºÐ»Ð¸ÐµÐ½ÑÐ°
+            var tokenResponse = await httpClient.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
+            {
+                Address = disco.TokenEndpoint,
+                ClientId = "Photos App by OAuth",
+                ClientSecret = "secret",
+                Scope = "photos"
+            });
+
+            if (tokenResponse.IsError)
+                throw new Exception(tokenResponse.Error);
+
+            return tokenResponse.AccessToken;
+        }
+
 
         public async Task<IEnumerable<PhotoEntity>> GetPhotosAsync(string ownerId)
         {
@@ -36,7 +71,7 @@ namespace PhotosApp.Clients
             request.Headers.Add(HeaderNames.Accept, MediaTypeNames.Application.Json);
 
             var response = await SendAsync(request);
-
+            Console.WriteLine(response.StatusCode);
             switch (response.StatusCode)
             {
                 case HttpStatusCode.OK:
@@ -105,7 +140,7 @@ namespace PhotosApp.Clients
                     throw new UnexpectedStatusCodeException(response.StatusCode);
             }
         }
-        
+
         public async Task<bool> AddPhotoAsync(string title, string ownerId, byte[] content)
         {
             var request = new HttpRequestMessage();
@@ -199,9 +234,85 @@ namespace PhotosApp.Clients
 
         private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
         {
-            var httpClient = new HttpClient();
-            var response = await httpClient.SendAsync(request);
-            return response;
+            var httpContext = httpContextAccessor.HttpContext;
+
+            var accessToken = await httpContext.GetTokenAsync(OpenIdConnectParameterNames.AccessToken);
+            if (accessToken == null)
+                return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+
+            var validationResult = await ValidateTokenAsync(accessToken);
+            if (validationResult.IsValid)
+            {
+                var httpClient = new HttpClient();
+                request.SetBearerToken(accessToken);
+                var response = await httpClient.SendAsync(request);
+                if (response.StatusCode != HttpStatusCode.Unauthorized)
+                    return response;
+            }
+            var refreshToken = await httpContext.GetTokenAsync(OpenIdConnectParameterNames.RefreshToken);
+            if (refreshToken == null)
+                return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+
+            var newAccessToken = await RefreshAccessTokenAsync(refreshToken);
+            if (newAccessToken != null)
+            {
+                var newHttpClient = new HttpClient();
+                var secondRequest = await request.CopyAsync();
+                secondRequest.SetBearerToken(newAccessToken);
+                var secondResponse = await newHttpClient.SendAsync(secondRequest);
+                return secondResponse;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.Unauthorized);
         }
+
+        private async Task<string> RefreshAccessTokenAsync(string refreshToken)
+        {
+            var httpContext = httpContextAccessor.HttpContext;
+            var oidcConfiguration = await oidcConfigurationManager.GetConfigurationAsync(httpContext.RequestAborted);
+
+            var tokenResponse = await new HttpClient().RequestRefreshTokenAsync(new RefreshTokenRequest
+            {
+                Address = oidcConfiguration.TokenEndpoint,
+                ClientId = "Photos App by OIDC",
+                ClientSecret = "secret",
+                RefreshToken = refreshToken,
+            });
+
+            var authResult = await httpContext.AuthenticateAsync();
+            if (tokenResponse.RefreshToken != null)
+                authResult.Properties.UpdateTokenValue(OpenIdConnectParameterNames.RefreshToken, tokenResponse.RefreshToken);
+            if (tokenResponse.AccessToken != null)
+                authResult.Properties.UpdateTokenValue(OpenIdConnectParameterNames.AccessToken, tokenResponse.AccessToken);
+            await httpContext.SignInAsync(authResult.Principal, authResult.Properties);
+
+            return tokenResponse.AccessToken;
+        }
+
+        private async Task<TokenValidationResult> ValidateTokenAsync(string accessToken)
+        {
+            var httpContext = httpContextAccessor.HttpContext;
+            var oidcConfiguration = await oidcConfigurationManager.GetConfigurationAsync(httpContext.RequestAborted);
+            var issuerSigningKeys = oidcConfiguration.SigningKeys;
+
+            var validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero,
+                // NOTE: ÐÐµÑÐµÐ¾Ð¿ÑÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð¿ÑÐ¾Ð²ÐµÑÐºÐ¸ Ð¿Ð¾Ð´Ð¿Ð¸ÑÐ¸ ÑÐ¾ÐºÐµÐ½Ð°, ÑÑÐ¾Ð±Ñ Ð¿Ð¾Ð´Ð¿Ð¸ÑÑ Ð½Ðµ Ð¿ÑÐ¾Ð²ÐµÑÑÐ»Ð°ÑÑ,
+                // Ð²ÐµÐ´Ñ ÐµÐµ Ð½Ðµ Ð¿Ð¾Ð»ÑÑÐ¸ÑÑÑ Ð¿ÑÐ¾Ð²ÐµÑÐ¸ÑÑ Ð±ÐµÐ· Ð·Ð°ÐºÑÑÑÐ¾Ð³Ð¾ ÐºÐ»ÑÑÐ°
+                SignatureValidator = (token, validationParameters) => new JsonWebToken(token)
+            };
+            validationParameters.SignatureValidator = null;
+            validationParameters.IssuerSigningKeys = issuerSigningKeys;
+            validationParameters.RequireSignedTokens = true;
+
+            var tokenHandler = new JsonWebTokenHandler();
+            var validationResult = tokenHandler.ValidateToken(accessToken, validationParameters);
+            return validationResult;
+        }
+
     }
 }

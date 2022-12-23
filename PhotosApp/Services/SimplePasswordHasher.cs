@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Identity;
 using NUnit.Framework;
@@ -25,10 +26,11 @@ namespace PhotosApp.Services
         public PasswordVerificationResult VerifyHashedPassword(TUser user,
             string hashedPassword, string providedPassword)
         {
-            byte[] expectedHashBytes = null;
-            byte[] actualHashBytes = null;
-
-            throw new NotImplementedException();
+            var base64Password = Convert.FromBase64String(hashedPassword);
+            byte[] expectedHashBytes = base64Password.Skip(16).ToArray();
+            var saltBytes = base64Password.Take(16).ToArray();
+            byte[] actualHashBytes = GetHashBytes(providedPassword, saltBytes);
+            
 
             // Если providedPassword корректен, то в результате хэширования его с той же самой солью,
             // что и оригинальный пароль, должен получаться тот же самый хэш.
