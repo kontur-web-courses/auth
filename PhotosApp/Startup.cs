@@ -2,14 +2,17 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Clients;
 using PhotosApp.Clients.Models;
 using PhotosApp.Data;
 using PhotosApp.Models;
+using PhotosApp.Services;
 using Serilog;
 
 namespace PhotosApp
@@ -31,9 +34,10 @@ namespace PhotosApp
             services.Configure<PhotosServiceOptions>(configuration.GetSection("PhotosService"));
 
             var mvc = services.AddControllersWithViews();
+            services.AddRazorPages();
             if (env.IsDevelopment())
                 mvc.AddRazorRuntimeCompilation();
-
+            
             // NOTE: Подключение IHttpContextAccessor, чтобы можно было получать HttpContext там,
             // где это не получается сделать более явно.
             services.AddHttpContextAccessor();
@@ -59,6 +63,8 @@ namespace PhotosApp
             }, new System.Reflection.Assembly[0]);
 
             services.AddTransient<ICookieManager, ChunkingCookieManager>();
+            
+            services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAppUser>>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -77,9 +83,14 @@ namespace PhotosApp
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
+            
+            app.UseAuthentication();
+            app.UseAuthorization();
+            
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute("default", "{controller=Photos}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
             });
         }
     }
