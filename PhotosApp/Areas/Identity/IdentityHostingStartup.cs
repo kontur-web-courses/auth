@@ -28,7 +28,8 @@ namespace PhotosApp.Areas.Identity
                 services.AddDefaultIdentity<PhotosAppUser>()
                     .AddErrorDescriber<RussianIdentityErrorDescriber>()
                     .AddEntityFrameworkStores<UsersDbContext>()
-                    .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>();
+                    .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>()
+                    .AddRoles<IdentityRole>();
 
                 services.Configure<IdentityOptions>(options =>
                 {
