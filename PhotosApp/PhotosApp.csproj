@@ -45,51 +45,51 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".photos\101.jpg"/>
-    <None Include=".photos\102.jpg"/>
-    <None Include=".photos\103.jpg"/>
-    <None Include=".photos\104.jpg"/>
-    <None Include=".photos\105.jpg"/>
-    <None Include=".photos\106.jpg"/>
-    <None Include=".photos\201.jpg"/>
-    <None Include=".photos\202.jpg"/>
-    <None Include=".photos\203.jpg"/>
-    <None Include=".photos\204.jpg"/>
-    <None Include=".photos\205.jpg"/>
-    <None Include=".photos\206.jpg"/>
+    <None Include=".photos\101.jpg" />
+    <None Include=".photos\102.jpg" />
+    <None Include=".photos\103.jpg" />
+    <None Include=".photos\104.jpg" />
+    <None Include=".photos\105.jpg" />
+    <None Include=".photos\106.jpg" />
+    <None Include=".photos\201.jpg" />
+    <None Include=".photos\202.jpg" />
+    <None Include=".photos\203.jpg" />
+    <None Include=".photos\204.jpg" />
+    <None Include=".photos\205.jpg" />
+    <None Include=".photos\206.jpg" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="10.1.1"/>
-    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1"/>
-    <PackageReference Include="IdentityModel" Version="5.1.0"/>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="5.0.4"/>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.4"/>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="5.0.4"/>
-    <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="5.0.4"/>
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="5.0.4"/>
-    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="5.0.4"/>
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="5.0.4"/>
+    <PackageReference Include="AutoMapper" Version="10.1.1" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1" />
+    <PackageReference Include="IdentityModel" Version="5.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="5.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="5.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="5.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="5.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="5.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="5.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="5.0.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.4"/>
-    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.9.0"/>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.4" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.9.0" />
     <PackageReference Include="Microsoft.Net.Compilers" Version="3.9.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.1"/>
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="5.0.2"/>
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3"/>
-    <PackageReference Include="NUnit" Version="3.13.1"/>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.1" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="5.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="NUnit" Version="3.13.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.17.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Serilog.AspNetCore" Version="4.1.0"/>
-    <PackageReference Include="System.Drawing.Common" Version="5.0.2"/>
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.9.0"/>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="5.0.5"/>
+    <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
+    <PackageReference Include="System.Drawing.Common" Version="5.0.2" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.9.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="5.0.5" />
   </ItemGroup>
 </Project>
