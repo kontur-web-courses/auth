@@ -26,7 +26,7 @@ namespace PhotosApp.Areas.Identity
                 services.AddDbContext<TicketsDbContext>(opt =>
                     opt.UseSqlite(
                         context.Configuration.GetConnectionString("TicketsDbContextConnection")));
-                
+
                 services.AddAuthorization(options =>
                 {
                     options.AddPolicy(
@@ -51,6 +51,13 @@ namespace PhotosApp.Areas.Identity
                             policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
                         });
                 });
+
+                services.AddAuthentication()
+                    .AddGoogle("Google", options =>
+                        {
+                            options.ClientId = context.Configuration["Authentication:Google:ClientId"];
+                            options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
+                        });
 
                 services.AddDefaultIdentity<PhotosAppUser>()
                     .AddRoles<IdentityRole>()
