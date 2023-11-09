@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Services;
+using PhotosApp.Services.Authorization;
 using PhotosApp.Services.TicketStores;
 
 [assembly: HostingStartup(typeof(PhotosApp.Areas.Identity.IdentityHostingStartup))]
@@ -24,12 +25,31 @@ namespace PhotosApp.Areas.Identity
                 services.AddDbContext<TicketsDbContext>(opt =>
                     opt.UseSqlite(
                         context.Configuration.GetConnectionString("TicketsDbContextConnection")));
+                
+                services.AddAuthorization(options =>
+                {
+                    options.AddPolicy(
+                        "Beta",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireClaim("testing", "beta");
+                        });
+                    options.AddPolicy(
+                        "CanAddPhoto",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireClaim("subscription", "paid");
+                        });
+                });
 
                 services.AddDefaultIdentity<PhotosAppUser>()
-                    .AddErrorDescriber<RussianIdentityErrorDescriber>()
+                    .AddRoles<IdentityRole>()
+                    .AddClaimsPrincipalFactory<CustomClaimsPrincipalFactory>()
                     .AddEntityFrameworkStores<UsersDbContext>()
                     .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>()
-                    .AddRoles<IdentityRole>();
+                    .AddErrorDescriber<RussianIdentityErrorDescriber>();
 
                 services.Configure<IdentityOptions>(options =>
                 {
