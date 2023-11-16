@@ -42,6 +42,8 @@ namespace PhotosApp.Areas.Identity
                     options.SignIn.RequireConfirmedPhoneNumber = false;
                     options.SignIn.RequireConfirmedAccount = false;
                 });
+                
+                services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAppUser>>();
             });
         }
     }
