@@ -46,7 +46,7 @@ namespace PhotosApp
             //services.AddDbContext<PhotosDbContext>(o =>
             //    o.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=PhotosApp;Trusted_Connection=True;"));
 
-            services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
+            services.AddScoped<IPhotosRepository, RemotePhotosRepository>(); // было LocalPhotosRepository
 
             services.AddAutoMapper(cfg =>
             {
@@ -58,6 +58,13 @@ namespace PhotosApp
                     .ForMember(m => m.Id, options => options.Ignore())
                     .ForMember(m => m.OwnerId, options => options.Ignore());
             }, new System.Reflection.Assembly[0]);
+
+            services.AddAuthentication("Bearer")
+                .AddJwtBearer("Bearer", options =>
+                {
+                    options.Authority = "https://localhost:7001";
+                    options.Audience = "photos_service";
+                });
 
             services.AddTransient<ICookieManager, ChunkingCookieManager>();
         }
@@ -78,10 +85,8 @@ namespace PhotosApp
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
-            
             app.UseAuthentication();
             app.UseAuthorization();
-            
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute("default", "{controller=Photos}/{action=Index}/{id?}");
