@@ -58,14 +58,7 @@ namespace PhotosApp
                     .ForMember(m => m.Id, options => options.Ignore())
                     .ForMember(m => m.OwnerId, options => options.Ignore());
             }, new System.Reflection.Assembly[0]);
-
-            services.AddAuthentication("Bearer")
-                .AddJwtBearer("Bearer", options =>
-                {
-                    options.Authority = "https://localhost:7001";
-                    options.Audience = "photos_service";
-                });
-
+            
             services.AddTransient<ICookieManager, ChunkingCookieManager>();
         }
 

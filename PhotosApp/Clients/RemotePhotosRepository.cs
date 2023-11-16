@@ -201,7 +201,8 @@ namespace PhotosApp.Clients
         private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
         {
             var httpClient = new HttpClient();
-            httpClient.SetBearerToken((await GetAccessTokenByClientCredentialsAsync()));
+            var token = await GetAccessTokenByClientCredentialsAsync();
+            httpClient.SetBearerToken(token);
             var response = await httpClient.SendAsync(request);
             return response;
         }
@@ -210,7 +211,8 @@ namespace PhotosApp.Clients
         {
             var httpClient = new HttpClient();
             // NOTE: Получение информации о сервере авторизации, в частности, адреса token endpoint.
-            var disco = await httpClient.GetDiscoveryDocumentAsync("TODO: адрес сервера авторизации");
+            
+            var disco = await httpClient.GetDiscoveryDocumentAsync("https://localhost:7001");
             if (disco.IsError)
                 throw new Exception(disco.Error);
 
@@ -218,9 +220,9 @@ namespace PhotosApp.Clients
             var tokenResponse = await httpClient.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
             {
                 Address = disco.TokenEndpoint,
-                ClientId = "TODO: идентификатор клиента",
-                ClientSecret = "TODO: секрет без SHA-256 шифрования",
-                Scope = "TODO: необходимые скоупы ресурсов через пробел"
+                ClientId = "Photos App by OAuth",
+                ClientSecret = "secret",
+                Scope = "photos"
             });
 
             if (tokenResponse.IsError)

@@ -39,6 +39,13 @@ namespace PhotosService
             services.AddDbContext<PhotosDbContext>(o => o.UseSqlite(connectionString));
 
             services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
+            
+            services.AddAuthentication("Bearer")
+                .AddJwtBearer("Bearer", options =>
+                {
+                    options.Authority = "https://localhost:7001";
+                    options.Audience = "photos_service";
+                });
 
             services.AddAutoMapper(cfg =>
             {
@@ -58,6 +65,8 @@ namespace PhotosService
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
