@@ -74,6 +74,11 @@ namespace PhotosApp.Areas.Identity
 
                 services.AddAuthorization(options =>
                 {
+                    options.DefaultPolicy = new AuthorizationPolicyBuilder(
+                                                JwtBearerDefaults.AuthenticationScheme,
+                                                IdentityConstants.ApplicationScheme)
+                                            .RequireAuthenticatedUser()
+                                            .Build();
                     options.AddPolicy(
                         "Beta",
                         policyBuilder =>

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace PhotosApp.Controllers
 {
-    [Authorize(Roles = "Dev")]
+    [Authorize(Roles = "Dev", AuthenticationSchemes = "Bearer, Identity.Application")]
     public class DevController : Controller
     {
         public IActionResult Decode()
