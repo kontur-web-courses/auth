@@ -35,6 +35,7 @@ namespace PhotosApp.Services.Authorization
                 var photo = await photosRepository.GetPhotoMetaAsync(photoIdGuid);
                 if(photo is not null && photo.OwnerId == userId)
                     context.Succeed(requirement);
+                return;
             }
             context.Fail();
         }
