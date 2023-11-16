@@ -25,7 +25,8 @@ namespace PhotosApp.Services
         public PasswordVerificationResult VerifyHashedPassword(TUser user,
             string hashedPassword, string providedPassword)
         {
-            byte[] expectedHashBytes = null;
+            var salt = GenerateSaltBytes();
+            byte[] expectedHashBytes = GetHashBytes(saltBytes: salt, password: hashedPassword);
             byte[] actualHashBytes = null;
 
             throw new NotImplementedException();

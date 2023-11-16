@@ -2,14 +2,17 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Clients;
 using PhotosApp.Clients.Models;
 using PhotosApp.Data;
 using PhotosApp.Models;
+using PhotosApp.Services;
 using Serilog;
 
 namespace PhotosApp
@@ -38,7 +41,7 @@ namespace PhotosApp
             // NOTE: Подключение IHttpContextAccessor, чтобы можно было получать HttpContext там,
             // где это не получается сделать более явно.
             services.AddHttpContextAccessor();
-
+            
             var connectionString = configuration.GetConnectionString("PhotosDbContextConnection")
                 ?? "Data Source=PhotosApp.db";
             services.AddDbContext<PhotosDbContext>(o => o.UseSqlite(connectionString));
@@ -47,7 +50,7 @@ namespace PhotosApp
             //    o.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=PhotosApp;Trusted_Connection=True;"));
 
             services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
-
+            services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAppUser>>();
             services.AddAutoMapper(cfg =>
             {
                 cfg.CreateMap<PhotoEntity, PhotoDto>().ReverseMap();
