@@ -29,8 +29,9 @@ namespace PhotosApp
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<PhotosServiceOptions>(configuration.GetSection("PhotosService"));
-
+            
             var mvc = services.AddControllersWithViews();
+            services.AddRazorPages(); 
             if (env.IsDevelopment())
                 mvc.AddRazorRuntimeCompilation();
 
@@ -77,9 +78,14 @@ namespace PhotosApp
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
+            
+            app.UseAuthentication();
+            app.UseAuthorization();
+            
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute("default", "{controller=Photos}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
             });
         }
     }
