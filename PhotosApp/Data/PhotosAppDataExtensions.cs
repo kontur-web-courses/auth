@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -155,7 +156,7 @@ namespace PhotosApp.Data
         }
 
         private static async Task SeedWithSampleUsersAsync<TUser>(this UserManager<TUser> userManager)
-            where TUser : IdentityUser, new()
+            where TUser : PhotosAppUser, new()
         {
             // NOTE: ToList важен, так как при удалении пользователя меняется список пользователей
             foreach (var user in userManager.Users.ToList())
@@ -169,6 +170,7 @@ namespace PhotosApp.Data
                     Email = "vicky@gmail.com"
                 };
                 await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                await userManager.AddClaimAsync(user, new Claim("testing", "beta"));
             }
 
             {
@@ -179,6 +181,7 @@ namespace PhotosApp.Data
                     Email = "cristina@gmail.com"
                 };
                 await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                user.Paid = true;
             }
 
             {

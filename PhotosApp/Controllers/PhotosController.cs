@@ -59,12 +59,14 @@ namespace PhotosApp.Controllers
         }
 
         [Authorize]
+        [Authorize(Policy = "CanAddPhoto")]
         public IActionResult AddPhoto()
         {
             return View();
         }
 
         [Authorize]
+        [Authorize(Policy = "CanAddPhoto")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddPhoto(AddPhotoModel addPhotoModel)
@@ -96,6 +98,7 @@ namespace PhotosApp.Controllers
         }
 
         [Authorize]
+        [Authorize(Policy = "Beta")]
         public async Task<IActionResult> EditPhoto(Guid id)
         {
             var photo = await photosRepository.GetPhotoMetaAsync(id);
@@ -111,6 +114,7 @@ namespace PhotosApp.Controllers
         }
 
         [Authorize]
+        [Authorize(Policy = "Beta")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditPhoto(EditPhotoModel editPhotoModel)
