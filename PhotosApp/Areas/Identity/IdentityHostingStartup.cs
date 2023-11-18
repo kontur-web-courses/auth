@@ -110,7 +110,8 @@ namespace PhotosApp.Areas.Identity
                 {
                     options.DefaultPolicy = new AuthorizationPolicyBuilder(
                             JwtBearerDefaults.AuthenticationScheme,
-                            IdentityConstants.ApplicationScheme)
+                            IdentityConstants.ApplicationScheme
+                            )
                         .RequireAuthenticatedUser()
                         .Build();
                     
