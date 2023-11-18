@@ -76,33 +76,7 @@ namespace PhotosApp.Areas.Identity
                 
                 services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAppUser>>();
                 services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
-
-                services.AddAuthorization(options =>
-                {
-                    options.AddPolicy(
-                        "Beta",
-                        policyBuilder =>
-                        {
-                            policyBuilder.RequireAuthenticatedUser();
-                            policyBuilder.RequireClaim("testing", "beta");
-                        }
-                    );
-                    options.AddPolicy(
-                        "CanAddPhoto",
-                        policyBuilder =>
-                        {
-                            policyBuilder.RequireAuthenticatedUser();
-                            policyBuilder.RequireClaim("subscription", "paid");
-                        }
-                    );
-                    options.AddPolicy(
-                        "MustOwnPhoto",
-                        policyBuilder =>
-                        {
-                            policyBuilder.RequireAuthenticatedUser();
-                            policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
-                        });
-                });
+                    
                 services.AddAuthentication()
                     .AddGoogle("Google", options =>
                     {
@@ -131,6 +105,48 @@ namespace PhotosApp.Areas.Identity
                             }
                         };
                     });
+                
+                services.AddAuthorization(options =>
+                {
+                    options.DefaultPolicy = new AuthorizationPolicyBuilder(
+                            JwtBearerDefaults.AuthenticationScheme,
+                            IdentityConstants.ApplicationScheme)
+                        .RequireAuthenticatedUser()
+                        .Build();
+                    
+                    options.AddPolicy(
+                        "Dev",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, IdentityConstants.ApplicationScheme);
+                            policyBuilder.RequireRole("Dev");
+                        });
+                    
+                    options.AddPolicy(
+                        "Beta",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireClaim("testing", "beta");
+                        }
+                    );
+                    options.AddPolicy(
+                        "CanAddPhoto",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireClaim("subscription", "paid");
+                        }
+                    );
+                    options.AddPolicy(
+                        "MustOwnPhoto",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
+                        });
+                });
             });
         }
     }
