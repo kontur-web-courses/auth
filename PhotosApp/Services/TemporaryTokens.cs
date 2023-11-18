@@ -15,15 +15,18 @@ namespace PhotosApp.Services
 
         public static string GenerateEncoded()
         {
-            var claims = new Claim[]
+            var claims = new[]
             {
+                new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
+                new Claim(ClaimsIdentity.DefaultNameClaimType, "test"),
+                new Claim(ClaimsIdentity.DefaultRoleClaimType, "Dev")
             };
 
             var jwt = new JwtSecurityToken(
                 claims: claims,
-                notBefore: null,
-                expires: null,
-                signingCredentials: null);
+                notBefore: DateTime.Now,
+                expires: DateTime.Now + TimeSpan.FromSeconds(30),
+                signingCredentials: new SigningCredentials(TemporaryTokens.SigningKey, SecurityAlgorithms.HmacSha256));
             var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
 
             return encodedJwt;

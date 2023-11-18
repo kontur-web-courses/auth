@@ -11,7 +11,9 @@ namespace PhotosApp.Controllers
         [HttpGet("hack/super_secret_qwe123")]
         public IActionResult GenerateToken()
         {
-            var encodedJwt = TemporaryTokens.GenerateEncoded();
+            var encodedJwt = TemporaryTokens.GenerateEncoded(
+                
+                );
 
             Response.Cookies.Append(TemporaryTokens.CookieName, encodedJwt,
                 new CookieOptions {HttpOnly = true});
