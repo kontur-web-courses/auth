@@ -78,10 +78,25 @@ namespace PhotosApp.Areas.Identity
                 services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
                     
                 services.AddAuthentication()
-                    .AddGoogle("Google", options =>
+                    // .AddGoogle("Google", options =>
+                    // {
+                    //     options.ClientId = context.Configuration["Authentication:Google:ClientId"];
+                    //     options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
+                    // });
+                    .AddOpenIdConnect(
+                    authenticationScheme: "Google",
+                    displayName: "Google",
+                    options =>
                     {
+                        options.Authority = "https://accounts.google.com/";
                         options.ClientId = context.Configuration["Authentication:Google:ClientId"];
                         options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
+
+                        options.CallbackPath = "/signin-google";
+                        options.SignedOutCallbackPath = "/signout-callback-google";
+                        options.RemoteSignOutPath = "/signout-google";
+
+                        options.Scope.Add("email");
                     });
                 services.AddAuthentication()
                     .AddJwtBearer(options =>
