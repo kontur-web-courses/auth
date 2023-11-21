@@ -139,7 +139,7 @@ namespace PhotosApp.Controllers
         }
 
         [Authorize]
-        [Authorize(Policy = "MustOwnPhoto")]
+        // [Authorize(Policy = "MustOwnPhoto")]
         [HttpPost]
         public async Task<IActionResult> DeletePhoto(Guid id)
         {
