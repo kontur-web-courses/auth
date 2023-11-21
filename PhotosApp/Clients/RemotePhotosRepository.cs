@@ -16,8 +16,10 @@ using System.Web;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
 
 namespace PhotosApp.Clients
@@ -214,11 +216,16 @@ namespace PhotosApp.Clients
             if (accessToken == null)
                 return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 
-            var httpClient = new HttpClient();
-            request.SetBearerToken(accessToken);
-            var response = await httpClient.SendAsync(request);
-            if (response.StatusCode != HttpStatusCode.Unauthorized)
-                return response;
+            var validationResult = (await ValidateTokenAsync(accessToken));
+            if (validationResult.IsValid)
+            {
+
+                var httpClient = new HttpClient();
+                request.SetBearerToken(accessToken);
+                var response = await httpClient.SendAsync(request);
+                if (response.StatusCode != HttpStatusCode.Unauthorized)
+                    return response;
+            }
 
             var refreshToken = await httpContext.GetTokenAsync(OpenIdConnectParameterNames.RefreshToken);
             if (refreshToken == null)
@@ -270,27 +277,32 @@ namespace PhotosApp.Clients
             return tokenResponse.AccessToken;
         }
         
-        private static async Task<string> GetAccessTokenByClientCredentialsAsync()
+        private async Task<TokenValidationResult> ValidateTokenAsync(string accessToken)
         {
-            var httpClient = new HttpClient();
-            // NOTE: Получение информации о сервере авторизации, в частности, адреса token endpoint.
-            var disco = await httpClient.GetDiscoveryDocumentAsync("https://localhost:7001");
-            if (disco.IsError)
-                throw new Exception(disco.Error);
-
-            // NOTE: Получение access token по реквизитам клиента
-            var tokenResponse = await httpClient.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
+            var httpContext = httpContextAccessor.HttpContext;
+            var oidcConfiguration = await oidcConfigurationManager.GetConfigurationAsync(httpContext.RequestAborted);
+            var issuerSigningKeys = oidcConfiguration.SigningKeys;
+            
+            var validationParameters = new TokenValidationParameters
             {
-                Address = disco.TokenEndpoint,
-                ClientId = "Photos App by OAuth",
-                ClientSecret = "secret",
-                Scope = "photos"
-            });
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero,
+                // NOTE: Переопределение проверки подписи токена, чтобы подпись не проверялась,
+                // ведь ее не получится проверить без закрытого ключа
+                SignatureValidator = (token, validationParameters) => new JsonWebToken(token)
+            };
+            
+            validationParameters.SignatureValidator = null;
+            // NOTE: для проверки подписи нужен открытый ключ сервера авторизации
+            validationParameters.IssuerSigningKeys = issuerSigningKeys;
+            // NOTE: токены совсем без подписи вообще-то надо всегда отбрасывать — они ничтожны
+            validationParameters.RequireSignedTokens = true;
 
-            if (tokenResponse.IsError)
-                throw new Exception(tokenResponse.Error);
-
-            return tokenResponse.AccessToken;
+            var tokenHandler = new JsonWebTokenHandler();
+            var validationResult = tokenHandler.ValidateToken(accessToken, validationParameters);
+            return validationResult;
         }
     }
 }
