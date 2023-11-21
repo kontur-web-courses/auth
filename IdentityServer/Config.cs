@@ -63,6 +63,10 @@ namespace IdentityServer
         
                     // NOTE: показывать ли пользователю страницу consent со списком запрошенных разрешений
                     RequireConsent = true,
+                    
+                    AccessTokenLifetime = 30,
+                    
+                    AllowOfflineAccess = true,
 
                     // NOTE: куда отправлять после логина
                     RedirectUris = { "https://localhost:5001/signin-passport" },
