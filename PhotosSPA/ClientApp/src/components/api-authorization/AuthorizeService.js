@@ -74,7 +74,7 @@ export class AuthorizeService {
         } else if (!this._popUpDisabled) {
           console.log("Popup authentication error: ", popUpError);
         }
-
+        
         // PopUps might be blocked by the user, fallback to redirect
         try {
           await this.userManager.signinRedirect(this.createArguments(state));
