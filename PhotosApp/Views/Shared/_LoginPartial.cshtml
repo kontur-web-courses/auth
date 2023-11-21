@@ -22,6 +22,7 @@
                   asp-controller="Passport"
                   asp-action="Login"
                   asp-route-returnUrl="@Context.Request.GetEncodedPathAndQuery()">
+                <input id="rememberMe" name="rememberMe" type="hidden" value="true" />
                 <button id="login" type="submit" class="nav-link btn btn-link text-dark">Login</button>
             </form>
         </li>
