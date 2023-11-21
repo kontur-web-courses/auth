@@ -51,6 +51,9 @@ namespace IdentityServer
                 {
                     ClientId = "Photos App by OIDC",
                     ClientSecrets = { new Secret("secret".Sha256()) },
+                    
+                    // NOTE: куда предлагать перейти после логаута
+                    PostLogoutRedirectUris = { "https://localhost:5001/signout-callback-passport" },
 
                     AllowedGrantTypes = GrantTypes.Code,
         
