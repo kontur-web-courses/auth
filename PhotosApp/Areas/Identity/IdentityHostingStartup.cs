@@ -61,6 +61,8 @@ namespace PhotosApp.Areas.Identity
                             options.RemoteSignOutPath = "/signout-google";
 
                             options.Scope.Add("email");
+                            
+                            // options.SaveTokens = true;
                         });
                 
                 services.AddAuthentication()
@@ -119,8 +121,10 @@ namespace PhotosApp.Areas.Identity
                         policyBuilder =>
                         {
                             policyBuilder.RequireAuthenticatedUser();
-                            policyBuilder.RequireRole("Dev");
-                            policyBuilder.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, IdentityConstants.ApplicationScheme);
+                            // policyBuilder.RequireRole("Dev");
+                            // policyBuilder.AddAuthenticationSchemes(
+                            //     JwtBearerDefaults.AuthenticationScheme, 
+                            //     IdentityConstants.ApplicationScheme);
                         });
                 });
 
@@ -130,6 +134,14 @@ namespace PhotosApp.Areas.Identity
                     .AddEntityFrameworkStores<UsersDbContext>()
                     .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>()
                     .AddErrorDescriber<RussianIdentityErrorDescriber>();
+                
+                services.ConfigureExternalCookie(options =>
+                {
+                    options.Cookie.Name = "PhotosApp.Auth.External";
+                    options.Cookie.HttpOnly = true;
+                    options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+                    options.SlidingExpiration = true;
+                });
 
                 services.Configure<IdentityOptions>(options =>
                 {
@@ -153,7 +165,7 @@ namespace PhotosApp.Areas.Identity
                 services.ConfigureApplicationCookie(options =>
                 {
                     var serviceProvider = services.BuildServiceProvider();
-                    options.SessionStore = serviceProvider.GetRequiredService<EntityTicketStore>();
+                    // options.SessionStore = serviceProvider.GetRequiredService<EntityTicketStore>();
                     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
                     options.Cookie.Name = "PhotosApp.Auth";
                     options.Cookie.HttpOnly = true;
