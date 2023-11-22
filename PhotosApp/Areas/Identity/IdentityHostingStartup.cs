@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -43,10 +42,25 @@ namespace PhotosApp.Areas.Identity
                         context.Configuration.GetConnectionString("TicketsDbContextConnection")));
                 
                 services.AddAuthentication()
-                    .AddGoogle("Google", options =>
+                    //.AddGoogle("Google", options =>
+                    //{
+                    //    options.ClientId = context.Configuration["Authentication:Google:ClientId"];
+                    //    options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
+                    //})
+                    .AddOpenIdConnect(
+                        authenticationScheme: "Google",
+                        displayName: "Google",
+                        options =>
                         {
+                            options.Authority = "https://accounts.google.com/";
                             options.ClientId = context.Configuration["Authentication:Google:ClientId"];
                             options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
+
+                            options.CallbackPath = "/signin-google";
+                            options.SignedOutCallbackPath = "/signout-callback-google";
+                            options.RemoteSignOutPath = "/signout-google";
+
+                            options.Scope.Add("email");
                         });
                 
                 services.AddAuthentication()
