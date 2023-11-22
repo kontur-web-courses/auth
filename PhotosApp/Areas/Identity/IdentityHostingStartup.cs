@@ -88,6 +88,27 @@ namespace PhotosApp.Areas.Identity
                         };
                     });
 
+                services.AddAuthentication()
+                    .AddOpenIdConnect("Passport", "Паспорт", options =>
+                    {
+                        options.Authority = "TODO: адрес сервера авторизации";
+
+                        options.ClientId = "TODO: идентификатор клиента";
+                        options.ClientSecret = "TODO: секрет без SHA-256 шифрования";
+                        options.ResponseType = "code";
+
+                        // NOTE: oidc и profile уже добавлены по умолчанию
+                        options.Scope.Add("TODO: запросить все доступные скоупы");
+
+                        options.CallbackPath = "TODO: куда отправлять после логина";
+
+                        // NOTE: все эти проверки токена выполняются по умолчанию, указаны для ознакомления
+                        options.TokenValidationParameters.ValidateIssuer = true; // проверка издателя
+                        options.TokenValidationParameters.ValidateAudience = true; // проверка получателя
+                        options.TokenValidationParameters.ValidateLifetime = true; // проверка не протух ли
+                        options.TokenValidationParameters.RequireSignedTokens = true; // есть ли валидная подпись издателя
+                    });
+
                 services.AddAuthorization(options =>
                 {
                     options.DefaultPolicy = new AuthorizationPolicyBuilder(
