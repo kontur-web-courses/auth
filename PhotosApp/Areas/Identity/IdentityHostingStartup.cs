@@ -91,16 +91,16 @@ namespace PhotosApp.Areas.Identity
                 services.AddAuthentication()
                     .AddOpenIdConnect("Passport", "Паспорт", options =>
                     {
-                        options.Authority = "TODO: адрес сервера авторизации";
+                        options.Authority = "https://localhost:7001";
 
-                        options.ClientId = "TODO: идентификатор клиента";
-                        options.ClientSecret = "TODO: секрет без SHA-256 шифрования";
+                        options.ClientId = "Photos App by OIDC";
+                        options.ClientSecret = "secret";
                         options.ResponseType = "code";
 
-                        // NOTE: oidc и profile уже добавлены по умолчанию
-                        options.Scope.Add("TODO: запросить все доступные скоупы");
+                        // NOTE: oidc и profile уже добавлены по-умолчанию
+                        options.Scope.Add("email");
 
-                        options.CallbackPath = "TODO: куда отправлять после логина";
+                        options.CallbackPath = "/signin-passport";
 
                         // NOTE: все эти проверки токена выполняются по умолчанию, указаны для ознакомления
                         options.TokenValidationParameters.ValidateIssuer = true; // проверка издателя
