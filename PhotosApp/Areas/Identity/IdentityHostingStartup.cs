@@ -1,5 +1,6 @@
 using System;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Services;
+using PhotosApp.Services.Authorization;
 using PhotosApp.Services.TicketStores;
 
 [assembly: HostingStartup(typeof(PhotosApp.Areas.Identity.IdentityHostingStartup))]
@@ -18,6 +20,7 @@ namespace PhotosApp.Areas.Identity
         public void Configure(IWebHostBuilder builder)
         {
             builder.ConfigureServices((context, services) => {
+                
                 services.AddDbContext<UsersDbContext>(options =>
                     options.UseSqlite(
                         context.Configuration.GetConnectionString("UsersDbContextConnection")));
@@ -29,7 +32,31 @@ namespace PhotosApp.Areas.Identity
                     .AddRoles<IdentityRole>()
                     .AddErrorDescriber<RussianIdentityErrorDescriber>()
                     .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>()
-                    .AddEntityFrameworkStores<UsersDbContext>();
+                    .AddEntityFrameworkStores<UsersDbContext>()
+                    .AddClaimsPrincipalFactory<CustomClaimsPrincipalFactory>();
+                
+                services.AddAuthorization(options =>
+                {
+                    options.AddPolicy(
+                        "Beta",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireClaim("testing", "beta");
+                        });
+                    options.AddPolicy(
+                        "CanAddPhoto",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireClaim("subscription", "paid");
+                        });
+                    options.AddPolicy("MustOwnPhoto", policyBuilder =>
+                    {
+                        policyBuilder.RequireAuthenticatedUser();
+                        policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
+                    });
+                });
                 
                 services.Configure<IdentityOptions>(options =>
                 {
