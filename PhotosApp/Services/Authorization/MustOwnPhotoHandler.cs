@@ -32,7 +32,7 @@ namespace PhotosApp.Services.Authorization
             if (!hasId)
                 return;
             
-            var photo = await photosRepository.GetPhotoMetaAsync((string) id);
+            var photo = await photosRepository.GetPhotoMetaAsync(new Guid(id.ToString()));
 
             if (photo.OwnerId == userId)
             {
