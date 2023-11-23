@@ -26,6 +26,7 @@ namespace PhotosApp.Areas.Identity
                         context.Configuration.GetConnectionString("UsersDbContextConnection")));
 
                 services.AddDefaultIdentity<PhotosAppUser>()
+                    .AddRoles<IdentityRole>()
                     .AddErrorDescriber<RussianIdentityErrorDescriber>()
                     .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>()
                     .AddEntityFrameworkStores<UsersDbContext>();
