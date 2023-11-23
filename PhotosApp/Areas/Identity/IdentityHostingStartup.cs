@@ -23,10 +23,6 @@ namespace PhotosApp.Areas.Identity
 
                 services.AddDefaultIdentity<PhotosAppUser>(options => options.SignIn.RequireConfirmedAccount = true)
                         .AddEntityFrameworkStores<UsersDbContext>();
-
-                var mvc = services.AddControllersWithViews();
-                services.AddRazorPages();
-                mvc.AddRazorRuntimeCompilation();
             });
         }
     }

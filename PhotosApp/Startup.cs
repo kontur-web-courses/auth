@@ -30,8 +30,8 @@ namespace PhotosApp
         {
             services.Configure<PhotosServiceOptions>(configuration.GetSection("PhotosService"));
 
-            
             var mvc = services.AddControllersWithViews();
+
             services.AddRazorPages();
             if (env.IsDevelopment())
                 mvc.AddRazorRuntimeCompilation();
@@ -41,7 +41,7 @@ namespace PhotosApp
             services.AddHttpContextAccessor();
 
             var connectionString = configuration.GetConnectionString("PhotosDbContextConnection")
-                ?? "Data Source=PhotosApp.db";
+                                   ?? "Data Source=PhotosApp.db";
             services.AddDbContext<PhotosDbContext>(o => o.UseSqlite(connectionString));
             // NOTE: Вместо Sqlite можно использовать LocalDB от Microsoft или другой SQL Server
             //services.AddDbContext<PhotosDbContext>(o =>
@@ -61,7 +61,6 @@ namespace PhotosApp
             }, new System.Reflection.Assembly[0]);
 
             services.AddTransient<ICookieManager, ChunkingCookieManager>();
-            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -80,9 +79,14 @@ namespace PhotosApp
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
+
+            app.UseAuthentication();
+            app.UseAuthorization();
+            
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute("default", "{controller=Photos}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
             });
         }
     }
