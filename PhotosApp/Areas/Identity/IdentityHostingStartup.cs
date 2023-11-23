@@ -102,6 +102,17 @@ namespace PhotosApp.Areas.Identity
                             policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
                         });
                 });
+                
+                services.AddTransient<IEmailSender, SimpleEmailSender>(serviceProvider =>
+                    new SimpleEmailSender(
+                        serviceProvider.GetRequiredService<ILogger<SimpleEmailSender>>(),
+                        serviceProvider.GetRequiredService<IWebHostEnvironment>(),
+                        context.Configuration["SimpleEmailSender:Host"],
+                        context.Configuration.GetValue<int>("SimpleEmailSender:Port"),
+                        context.Configuration.GetValue<bool>("SimpleEmailSender:EnableSSL"),
+                        context.Configuration["SimpleEmailSender:UserName"],
+                        context.Configuration["SimpleEmailSender:Password"]
+                    ));
             });
         }
     }
