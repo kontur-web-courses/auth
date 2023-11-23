@@ -31,6 +31,7 @@ namespace PhotosApp
             services.Configure<PhotosServiceOptions>(configuration.GetSection("PhotosService"));
 
             var mvc = services.AddControllersWithViews();
+            services.AddRazorPages();
             if (env.IsDevelopment())
                 mvc.AddRazorRuntimeCompilation();
 
@@ -46,6 +47,7 @@ namespace PhotosApp
             //    o.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=PhotosApp;Trusted_Connection=True;"));
 
             services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
+            // services.AddScoped<IPhotosRepository, RemotePhotosRepository>();
 
             services.AddAutoMapper(cfg =>
             {
@@ -57,7 +59,7 @@ namespace PhotosApp
                     .ForMember(m => m.Id, options => options.Ignore())
                     .ForMember(m => m.OwnerId, options => options.Ignore());
             }, new System.Reflection.Assembly[0]);
-
+            
             services.AddTransient<ICookieManager, ChunkingCookieManager>();
         }
 
@@ -77,9 +79,12 @@ namespace PhotosApp
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute("default", "{controller=Photos}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
             });
         }
     }
