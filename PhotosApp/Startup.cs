@@ -30,7 +30,9 @@ namespace PhotosApp
         {
             services.Configure<PhotosServiceOptions>(configuration.GetSection("PhotosService"));
 
+            
             var mvc = services.AddControllersWithViews();
+            services.AddRazorPages();
             if (env.IsDevelopment())
                 mvc.AddRazorRuntimeCompilation();
 
@@ -59,6 +61,7 @@ namespace PhotosApp
             }, new System.Reflection.Assembly[0]);
 
             services.AddTransient<ICookieManager, ChunkingCookieManager>();
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
