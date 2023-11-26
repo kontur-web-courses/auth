@@ -156,30 +156,30 @@ namespace PhotosApp.Data
                 var user = new TUser
                 {
                     Id = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd",
-                    UserName = "vicky@gmail.com",
+                    UserName = "vicky",
                     Email = "vicky@gmail.com"
                 };
-                await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                await userManager.RegisterUserIfNotExists(user, "vicky");
             }
 
             {
                 var user = new TUser
                 {
                     Id = "dcaec9ce-91c9-4105-8d4d-eee3365acd82",
-                    UserName = "cristina@gmail.com",
+                    UserName = "cristina",
                     Email = "cristina@gmail.com"
                 };
-                await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                await userManager.RegisterUserIfNotExists(user, "cristina");
             }
 
             {
                 var user = new TUser
                 {
                     Id = "b9991f69-b4c1-477d-9432-2f7cf6099e02",
-                    UserName = "dev@gmail.com",
+                    UserName = "dev",
                     Email = "dev@gmail.com"
                 };
-                await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                await userManager.RegisterUserIfNotExists(user, "dev");
             }
         }
 
