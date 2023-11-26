@@ -23,7 +23,9 @@ namespace PhotosApp.Areas.Identity
                 services.AddDefaultIdentity<PhotosAppUser>()
                     .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>()
                     .AddEntityFrameworkStores<UsersDbContext>();
-
+                
+                services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAppUser>>();
+                
                 services.Configure<IdentityOptions>(options =>
                 {
                     // Default Password settings.
