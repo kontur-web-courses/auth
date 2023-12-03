@@ -35,9 +35,14 @@ namespace PhotosApp.Areas.Identity
                     options.Password.RequiredUniqueChars = 1;
                     options.SignIn.RequireConfirmedAccount = false;
                 });
-                
+
                 services.AddAuthorization(options =>
                 {
+                    options.DefaultPolicy = new AuthorizationPolicyBuilder(
+                            JwtBearerDefaults.AuthenticationScheme,
+                            IdentityConstants.ApplicationScheme)
+                        .RequireAuthenticatedUser()
+                        .Build();
                     options.AddPolicy(
                         "Beta",
                         policyBuilder =>
@@ -58,6 +63,14 @@ namespace PhotosApp.Areas.Identity
                         {
                             policyBuilder.RequireAuthenticatedUser();
                             policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
+                        });
+                    options.AddPolicy(
+                        "Dev",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireRole("Dev");
+                            policyBuilder.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, IdentityConstants.ApplicationScheme);
                         });
                 });
 
