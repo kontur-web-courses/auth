@@ -34,7 +34,7 @@ namespace PhotosApp.Controllers
             return View(model);
         }
 
-        [Authorize]
+        [Authorize(Policy = "MustOwnPhoto")]
         public async Task<IActionResult> GetPhoto(Guid id)
         {
             var photoEntity = await photosRepository.GetPhotoMetaAsync(id);
@@ -46,9 +46,9 @@ namespace PhotosApp.Controllers
             var model = new GetPhotoModel(photo);
             return View(model);
         }
-
-        [Authorize]
+        
         [HttpGet("photos/{id}")]
+        [Authorize(Policy = "MustOwnPhoto")]
         public async Task<IActionResult> GetPhotoFile(Guid id)
         {
             var photoContent = await photosRepository.GetPhotoContentAsync(id);
@@ -57,14 +57,14 @@ namespace PhotosApp.Controllers
 
             return File(photoContent.Content, photoContent.ContentType, photoContent.FileName);
         }
-
-        [Authorize]
+        
+        [Authorize(Policy = "CanAddPhoto")]
         public IActionResult AddPhoto()
         {
             return View();
         }
-
-        [Authorize]
+        
+        [Authorize(Policy = "CanAddPhoto")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddPhoto(AddPhotoModel addPhotoModel)
@@ -94,8 +94,9 @@ namespace PhotosApp.Controllers
 
             return RedirectToAction("Index");
         }
-
-        [Authorize]
+        
+        [Authorize(Policy = "Beta")]
+        [Authorize(Policy = "MustOwnPhoto")]
         public async Task<IActionResult> EditPhoto(Guid id)
         {
             var photo = await photosRepository.GetPhotoMetaAsync(id);
@@ -107,10 +108,12 @@ namespace PhotosApp.Controllers
                 Id = photo.Id,
                 Title = photo.Title
             };
+            
             return View(viewModel);
         }
-
-        [Authorize]
+        
+        [Authorize(Policy = "Beta")]
+        [Authorize(Policy = "MustOwnPhoto")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditPhoto(EditPhotoModel editPhotoModel)
@@ -130,7 +133,7 @@ namespace PhotosApp.Controllers
             return RedirectToAction("Index");
         }
 
-        [Authorize]
+        [Authorize(Policy = "MustOwnPhoto")]
         [HttpPost]
         public async Task<IActionResult> DeletePhoto(Guid id)
         {
