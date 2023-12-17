@@ -28,6 +28,9 @@ namespace PhotosApp.Data
                         var photosDbContext = scope.ServiceProvider.GetRequiredService<PhotosDbContext>();
                         photosDbContext.SeedWithSamplePhotosAsync().Wait();
                         
+                        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                        roleManager.SeedWithSampleRolesAsync().Wait();
+                        
                         var appUser = scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>();
                         appUser.SeedWithSampleUsersAsync().Wait();
                         
@@ -160,7 +163,7 @@ namespace PhotosApp.Data
                 var user = new TUser
                 {
                     Id = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd",
-                    UserName = "vicky",
+                    UserName = "vicky@gmail.com",
                     Email = "vicky@gmail.com"
                 };
                 await userManager.RegisterUserIfNotExists(user, psw);
@@ -170,7 +173,7 @@ namespace PhotosApp.Data
                 var user = new TUser
                 {
                     Id = "dcaec9ce-91c9-4105-8d4d-eee3365acd82",
-                    UserName = "cristina",
+                    UserName = "cristina@gmail.com",
                     Email = "cristina@gmail.com"
                 };
                 await userManager.RegisterUserIfNotExists(user, psw);
@@ -180,10 +183,11 @@ namespace PhotosApp.Data
                 var user = new TUser
                 {
                     Id = "b9991f69-b4c1-477d-9432-2f7cf6099e02",
-                    UserName = "dev",
+                    UserName = "dev@gmail.com",
                     Email = "dev@gmail.com"
                 };
                 await userManager.RegisterUserIfNotExists(user, psw);
+                await userManager.AddToRoleAsync(user, "Dev");
             }
         }
 

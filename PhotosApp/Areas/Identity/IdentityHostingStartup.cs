@@ -29,6 +29,7 @@ namespace PhotosApp.Areas.Identity
 
 
                 services.AddDefaultIdentity<PhotosAppUser>()
+                    .AddRoles<IdentityRole>()
                     .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>()
                     .AddEntityFrameworkStores<UsersDbContext>()
                     .AddErrorDescriber<RussianIdentityErrorDescriber>();
@@ -60,6 +61,7 @@ namespace PhotosApp.Areas.Identity
                     options.Password.RequireUppercase = false;
                     options.SignIn.RequireConfirmedAccount = false;
                 });
+                
             });
         }
     }
