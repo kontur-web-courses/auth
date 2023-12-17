@@ -64,6 +64,7 @@ namespace PhotosApp.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "CanAddPhoto")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddPhoto(AddPhotoModel addPhotoModel)
         {
@@ -93,6 +94,7 @@ namespace PhotosApp.Controllers
             return RedirectToAction("Index");
         }
 
+        [Authorize(Policy = "Beta")]
         public async Task<IActionResult> EditPhoto(Guid id)
         {
             var photo = await photosRepository.GetPhotoMetaAsync(id);
@@ -108,6 +110,7 @@ namespace PhotosApp.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "Beta")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditPhoto(EditPhotoModel editPhotoModel)
         {

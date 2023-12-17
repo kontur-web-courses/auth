@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Services;
+using PhotosApp.Services.Authorization;
 using PhotosApp.Services.TicketStores;
 
 [assembly: HostingStartup(typeof(PhotosApp.Areas.Identity.IdentityHostingStartup))]
@@ -32,7 +33,8 @@ namespace PhotosApp.Areas.Identity
                     .AddRoles<IdentityRole>()
                     .AddPasswordValidator<UsernameAsPasswordValidator<PhotosAppUser>>()
                     .AddEntityFrameworkStores<UsersDbContext>()
-                    .AddErrorDescriber<RussianIdentityErrorDescriber>();
+                    .AddErrorDescriber<RussianIdentityErrorDescriber>()
+                    .AddClaimsPrincipalFactory<CustomClaimsPrincipalFactory>();
                     
                 services.AddTransient<EntityTicketStore>();
                 services.ConfigureApplicationCookie(options =>
@@ -60,6 +62,25 @@ namespace PhotosApp.Areas.Identity
                     options.Password.RequireNonAlphanumeric = false;
                     options.Password.RequireUppercase = false;
                     options.SignIn.RequireConfirmedAccount = false;
+                });
+                
+                services.AddAuthorization(options =>
+                {
+                    options.AddPolicy(
+                        "Beta",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireClaim("testing", "beta");
+                        });
+                    
+                    options.AddPolicy(
+                        "CanAddPhoto",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.RequireClaim("subscription", "paid");
+                        });
                 });
                 
             });
