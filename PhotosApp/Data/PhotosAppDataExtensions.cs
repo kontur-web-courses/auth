@@ -148,6 +148,7 @@ namespace PhotosApp.Data
         private static async Task SeedWithSampleUsersAsync<TUser>(this UserManager<TUser> userManager)
             where TUser : IdentityUser, new()
         {
+            const string psw = "aaaaaa";
             // NOTE: ToList важен, так как при удалении пользователя меняется список пользователей
             foreach (var user in userManager.Users.ToList())
                 await userManager.DeleteAsync(user);
@@ -159,7 +160,7 @@ namespace PhotosApp.Data
                     UserName = "vicky",
                     Email = "vicky@gmail.com"
                 };
-                await userManager.RegisterUserIfNotExists(user, "vicky");
+                await userManager.RegisterUserIfNotExists(user, psw);
             }
 
             {
@@ -169,7 +170,7 @@ namespace PhotosApp.Data
                     UserName = "cristina",
                     Email = "cristina@gmail.com"
                 };
-                await userManager.RegisterUserIfNotExists(user, "cristina");
+                await userManager.RegisterUserIfNotExists(user, psw);
             }
 
             {
@@ -179,7 +180,7 @@ namespace PhotosApp.Data
                     UserName = "dev",
                     Email = "dev@gmail.com"
                 };
-                await userManager.RegisterUserIfNotExists(user, "dev");
+                await userManager.RegisterUserIfNotExists(user, psw);
             }
         }
 
