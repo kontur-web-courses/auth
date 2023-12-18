@@ -66,6 +66,13 @@ namespace PhotosApp.Areas.Identity
                     options.SignIn.RequireConfirmedAccount = false;
                 });
                 
+                services.AddAuthentication()
+                    .AddGoogle("Google", options =>
+                    {
+                        options.ClientId = context.Configuration["Authentication:Google:ClientId"];
+                        options.ClientSecret = context.Configuration["Authentication:Google:ClientSecret"];
+                    });
+                
                 services.AddAuthorization(options =>
                 {
                     options.AddPolicy(
