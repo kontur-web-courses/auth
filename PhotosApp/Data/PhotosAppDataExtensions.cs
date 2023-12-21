@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Services.TicketStores;
 
 namespace PhotosApp.Data
@@ -23,9 +25,22 @@ namespace PhotosApp.Data
                     if (env.IsDevelopment())
                     {
                         scope.ServiceProvider.GetRequiredService<PhotosDbContext>().Database.Migrate();
+                        scope.ServiceProvider.GetRequiredService<UsersDbContext>().Database.Migrate();
+                        scope.ServiceProvider.GetRequiredService<TicketsDbContext>().Database.Migrate();
 
                         var photosDbContext = scope.ServiceProvider.GetRequiredService<PhotosDbContext>();
                         photosDbContext.SeedWithSamplePhotosAsync().Wait();
+
+                        // var roleDbContext = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                        // roleDbContext.SeedWithSampleRolesAsync().Wait();    
+                        //
+                        // var usersDbContext = scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>();
+                        // usersDbContext.SeedWithSampleUsersAsync().Wait();
+                        //
+                        // var ticketsDbContext = scope.ServiceProvider.GetRequiredService<TicketsDbContext>();
+                        // ticketsDbContext.SeedWithSampleTicketsAsync().Wait();
+                        
+                        
                     }
                 }
                 catch (Exception e)
@@ -141,7 +156,7 @@ namespace PhotosApp.Data
         }
 
         private static async Task SeedWithSampleUsersAsync<TUser>(this UserManager<TUser> userManager)
-            where TUser : IdentityUser, new()
+            where TUser : PhotosAppUser, new()
         {
             // NOTE: ToList важен, так как при удалении пользователя меняется список пользователей
             foreach (var user in userManager.Users.ToList())
@@ -155,6 +170,7 @@ namespace PhotosApp.Data
                     Email = "vicky@gmail.com"
                 };
                 await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                await userManager.AddClaimAsync(user, new Claim("testing", "beta"));
             }
 
             {
@@ -165,6 +181,7 @@ namespace PhotosApp.Data
                     Email = "cristina@gmail.com"
                 };
                 await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                user.Paid = true;
             }
 
             {
@@ -175,6 +192,7 @@ namespace PhotosApp.Data
                     Email = "dev@gmail.com"
                 };
                 await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                await userManager.AddToRoleAsync(user, "Dev");
             }
         }
 
