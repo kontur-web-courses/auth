@@ -1,10 +1,13 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,8 +53,8 @@ namespace PhotosApp
             //services.AddDbContext<PhotosDbContext>(o =>
             //    o.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=PhotosApp;Trusted_Connection=True;"));
 
-            services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
-            // services.AddScoped<IPhotosRepository, RemotePhotosRepository>();
+            // services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
+            services.AddScoped<IPhotosRepository, RemotePhotosRepository>();
 
             services.AddAutoMapper(cfg =>
             {
@@ -94,6 +97,8 @@ namespace PhotosApp
 
                     // NOTE: oidc и profile уже добавлены по умолчанию
                     options.Scope.Add("email");
+                    options.Scope.Add("photos_app");
+                    options.Scope.Add("photos");
 
                     options.CallbackPath = "/signin-passport";
                     options.SignedOutCallbackPath = "/signout-callback-passport";
@@ -102,8 +107,7 @@ namespace PhotosApp
                     options.TokenValidationParameters.ValidateIssuer = true; // проверка издателя
                     options.TokenValidationParameters.ValidateAudience = true; // проверка получателя
                     options.TokenValidationParameters.ValidateLifetime = true; // проверка не протух ли
-                    options.TokenValidationParameters.RequireSignedTokens =
-                        true; // есть ли валидная подпись издателя
+                    options.TokenValidationParameters.RequireSignedTokens = true; // есть ли валидная подпись издателя
                     options.SaveTokens = true;
                     options.Events = new OpenIdConnectEvents
                     {
@@ -115,8 +119,8 @@ namespace PhotosApp
                         }
                     };
                 });
+            
             services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
-
             services.AddAuthorization(options =>
             {
                 options.DefaultPolicy = new AuthorizationPolicyBuilder()
@@ -151,9 +155,7 @@ namespace PhotosApp
                     policyBuilder =>
                     {
                         policyBuilder.RequireAuthenticatedUser();
-                        // policyBuilder.AuthenticationSchemes = new List<string>
-                        //     {JwtBearerDefaults.AuthenticationScheme, IdentityConstants.ApplicationScheme};
-                        // policyBuilder.RequireRole("Dev");
+                        policyBuilder.RequireRole("Dev");
                     });
             });
         }

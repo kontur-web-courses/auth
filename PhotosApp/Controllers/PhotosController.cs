@@ -60,6 +60,7 @@ namespace PhotosApp.Controllers
             return File(photoContent.Content, photoContent.ContentType, photoContent.FileName);
         }
 
+        [Authorize(Policy = "CanAddPhoto")]
         public IActionResult AddPhoto()
         {
             return View();
