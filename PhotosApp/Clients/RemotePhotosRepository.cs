@@ -13,6 +13,7 @@ using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using IdentityModel.Client;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
 
 namespace PhotosApp.Clients
@@ -21,19 +22,17 @@ namespace PhotosApp.Clients
     {
         private readonly string serviceUrl;
         private readonly IMapper mapper;
+        private readonly string authServerUrl;
 
         public RemotePhotosRepository(IOptions<PhotosServiceOptions> options, IMapper mapper)
         {
             serviceUrl = options.Value.ServiceUrl;
             this.mapper = mapper;
+            authServerUrl = "https://localhost:7001";
         }
 
         public async Task<IEnumerable<PhotoEntity>> GetPhotosAsync(string ownerId)
         {
-            if (ownerId is null)
-            {
-                return Array.Empty<PhotoEntity>();
-            }
             var request = new HttpRequestMessage();
             request.Method = HttpMethod.Get;
             request.RequestUri = BuildUri($"/api/photos", $"ownerId={UrlEncode(ownerId)}");
@@ -187,6 +186,30 @@ namespace PhotosApp.Clients
                     throw new UnexpectedStatusCodeException(response.StatusCode);
             }
         }
+        
+        private async Task<string> GetAccessTokenByClientCredentialsAsync()
+        {
+            var httpClient = new HttpClient();
+            // NOTE: Получение информации о сервере авторизации, в частности, адреса token endpoint.
+            var disco = await httpClient.GetDiscoveryDocumentAsync(authServerUrl);
+            if (disco.IsError)
+                throw new Exception(disco.Error);
+
+            // NOTE: Получение access token по реквизитам клиента
+            var tokenResponse = await httpClient.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
+            {
+                Address = disco.TokenEndpoint,
+                ClientId = "Photos App by OAuth",
+                ClientSecret = "secret",
+                Scope = "photos"
+            });
+
+            if (tokenResponse.IsError)
+                throw new Exception(tokenResponse.Error);
+
+            return tokenResponse.AccessToken;
+        }
+        
 
         private Uri BuildUri(string path, string query = null)
             => new UriBuilder(serviceUrl) { Path = path, Query = query }.Uri;
@@ -203,7 +226,9 @@ namespace PhotosApp.Clients
 
         private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
         {
+            var accessToken = await GetAccessTokenByClientCredentialsAsync();
             var httpClient = new HttpClient();
+            httpClient.SetBearerToken(accessToken);
             var response = await httpClient.SendAsync(request);
             return response;
         }
