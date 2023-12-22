@@ -23,7 +23,7 @@ namespace IdentityServer.Data
                     var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
                     if (env.IsDevelopment())
                     {
-                        scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.Migrate();
+       
 
                         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
                         userManager.SeedWithSampleUsersAsync().Wait();
