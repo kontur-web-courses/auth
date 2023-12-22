@@ -189,7 +189,7 @@ namespace PhotosApp.Data
                     Email = "dev@gmail.com"
                 };
                 await userManager.RegisterUserIfNotExists(user, psw);
-                await userManager.AddToRoleAsync(user, "Dev");
+                await userManager.AddClaimAsync(user, new Claim("role", "dev"));
             }
         }
 

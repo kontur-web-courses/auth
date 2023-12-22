@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -29,8 +30,8 @@ namespace PhotosApp.Areas.Identity
                 services.AddDbContext<UsersDbContext>(options =>
                     options.UseSqlite(
                         context.Configuration.GetConnectionString("UsersDbContextConnection")));
-                
-                services.AddDbContext<TicketsDbContext >(options =>
+
+                services.AddDbContext<TicketsDbContext>(options =>
                     options.UseSqlite(
                         context.Configuration.GetConnectionString("TicketsDbContextConnection")));
 
@@ -41,7 +42,7 @@ namespace PhotosApp.Areas.Identity
                     .AddEntityFrameworkStores<UsersDbContext>()
                     .AddErrorDescriber<RussianIdentityErrorDescriber>()
                     .AddClaimsPrincipalFactory<CustomClaimsPrincipalFactory>();
-                    
+
                 services.AddTransient<EntityTicketStore>();
                 services.ConfigureApplicationCookie(options =>
                 {
@@ -57,10 +58,10 @@ namespace PhotosApp.Areas.Identity
                     options.ReturnUrlParameter = CookieAuthenticationDefaults.ReturnUrlParameter;
                     options.SlidingExpiration = true;
                 });
-                
+
                 services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
                 services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAppUser>>();
-                
+
                 services.Configure<IdentityOptions>(options =>
                 {
                     // Default Password settings.
@@ -70,7 +71,7 @@ namespace PhotosApp.Areas.Identity
                     options.Password.RequireUppercase = false;
                     options.SignIn.RequireConfirmedAccount = true;
                 });
-                
+
                 services.AddAuthentication()
                     .AddGoogle("Google", options =>
                     {
@@ -101,6 +102,12 @@ namespace PhotosApp.Areas.Identity
 
                 services.AddAuthorization(options =>
                 {
+                    options.DefaultPolicy = new AuthorizationPolicyBuilder(
+                            JwtBearerDefaults.AuthenticationScheme,
+                            IdentityConstants.ApplicationScheme)
+                        .RequireAuthenticatedUser()
+                        .Build();
+
                     options.AddPolicy(
                         "Beta",
                         policyBuilder =>
@@ -123,8 +130,17 @@ namespace PhotosApp.Areas.Identity
                             policyBuilder.RequireAuthenticatedUser();
                             policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
                         });
+                    
+                    options.AddPolicy(
+                        "OpenDecodePage",
+                        policyBuilder =>
+                        {
+                            policyBuilder.RequireAuthenticatedUser();
+                            policyBuilder.AuthenticationSchemes = new List<string> { JwtBearerDefaults.AuthenticationScheme, IdentityConstants.ApplicationScheme};
+                            policyBuilder.RequireRole("Dev");
+                        });
                 });
-                
+
                 services.AddTransient<IEmailSender, SimpleEmailSender>(serviceProvider =>
                     new SimpleEmailSender(
                         serviceProvider.GetRequiredService<ILogger<SimpleEmailSender>>(),
@@ -135,7 +151,6 @@ namespace PhotosApp.Areas.Identity
                         context.Configuration["SimpleEmailSender:UserName"],
                         context.Configuration["SimpleEmailSender:Password"]
                     ));
-                
             });
         }
     }
