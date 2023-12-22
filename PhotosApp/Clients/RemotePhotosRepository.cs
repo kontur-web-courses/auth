@@ -16,6 +16,7 @@ using System.Web;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
+using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
 
@@ -25,13 +26,16 @@ namespace PhotosApp.Clients
     {
         private readonly string serviceUrl;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IConfigurationManager<OpenIdConnectConfiguration> _oidcConfigurationManager;
         private readonly IMapper mapper;
         private readonly string authServerUrl;
 
-        public RemotePhotosRepository(IOptions<PhotosServiceOptions> options,IHttpContextAccessor httpContextAccessor , IMapper mapper)
+        public RemotePhotosRepository(IOptions<PhotosServiceOptions> options, IHttpContextAccessor httpContextAccessor,
+            IConfigurationManager<OpenIdConnectConfiguration> oidcConfigurationManager, IMapper mapper)
         {
             serviceUrl = options.Value.ServiceUrl;
             _httpContextAccessor = httpContextAccessor;
+            _oidcConfigurationManager = oidcConfigurationManager;
             this.mapper = mapper;
             authServerUrl = "https://localhost:7001";
         }
@@ -113,7 +117,7 @@ namespace PhotosApp.Clients
                     throw new UnexpectedStatusCodeException(response.StatusCode);
             }
         }
-        
+
         public async Task<bool> AddPhotoAsync(string title, string ownerId, byte[] content)
         {
             var request = new HttpRequestMessage();
@@ -191,7 +195,7 @@ namespace PhotosApp.Clients
                     throw new UnexpectedStatusCodeException(response.StatusCode);
             }
         }
-        
+
         private async Task<string> GetAccessTokenByClientCredentialsAsync()
         {
             var httpClient = new HttpClient();
@@ -214,10 +218,11 @@ namespace PhotosApp.Clients
 
             return tokenResponse.AccessToken;
         }
-        
+
 
         private Uri BuildUri(string path, string query = null)
-            => new UriBuilder(serviceUrl) { Path = path, Query = query }.Uri;
+            => new UriBuilder(serviceUrl) {Path = path, Query = query}.Uri;
+
         private string UrlEncode(object arg) => arg != null ? HttpUtility.UrlEncode(arg.ToString()) : null;
 
         private static ByteArrayContent SerializeToJsonContent(object obj)
@@ -232,15 +237,65 @@ namespace PhotosApp.Clients
         private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
         {
             var httpContext = _httpContextAccessor.HttpContext;
-            
+
             var accessToken = await httpContext.GetTokenAsync(OpenIdConnectParameterNames.AccessToken);
             if (accessToken == null)
                 return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 
             var httpClient = new HttpClient();
-            httpClient.SetBearerToken(accessToken);
+            request.SetBearerToken(accessToken);
             var response = await httpClient.SendAsync(request);
-            return response;
+            if (response.StatusCode != HttpStatusCode.Unauthorized)
+                return response;
+
+            var refreshToken = await httpContext.GetTokenAsync(OpenIdConnectParameterNames.RefreshToken);
+            if (refreshToken == null)
+                return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+
+            // NOTE: запрос нового access token
+            var newAccessToken = await RefreshAccessTokenAsync(refreshToken);
+            if (newAccessToken != null)
+            {
+                // NOTE: повторный запрос
+                var newHttpClient = new HttpClient();
+                // NOTE: HttpRequestMessage нельзя использовать два раза, поэтому он копируется
+                var secondRequest = await request.CopyAsync();
+                secondRequest.SetBearerToken(newAccessToken);
+                var secondResponse = await newHttpClient.SendAsync(secondRequest);
+                return secondResponse;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+        }
+
+        private async Task<string> RefreshAccessTokenAsync(string refreshToken)
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+
+            // NOTE: получение конфигурации сервера авторизации
+            // NOTE: если исходный запрос будет отменен, то использование RequestAborted отменит запрос конфигурации
+            var oidcConfiguration = await _oidcConfigurationManager.GetConfigurationAsync(httpContext.RequestAborted);
+
+            // NOTE: запрос токенов с помощью IdentityModel
+            var tokenResponse = await new HttpClient().RequestRefreshTokenAsync(new RefreshTokenRequest
+            {
+                Address = oidcConfiguration.TokenEndpoint,
+                ClientId = "Photos App by OIDC",
+                ClientSecret = "secret",
+                RefreshToken = refreshToken,
+            });
+
+            // NOTE: обновление access token и refresh token в аутентификационной cookie
+            // NOTE: Схему можно не указывать, потому что DefaultScheme подходит, DefaultAuthenticateScheme не задана
+            var authResult = await httpContext.AuthenticateAsync();
+            if (tokenResponse.RefreshToken != null)
+                authResult.Properties.UpdateTokenValue(OpenIdConnectParameterNames.RefreshToken, tokenResponse.RefreshToken);
+            if (tokenResponse.AccessToken != null)
+                authResult.Properties.UpdateTokenValue(OpenIdConnectParameterNames.AccessToken, tokenResponse.AccessToken);
+            // NOTE: Схему можно не указывать, потому что DefaultSignInScheme подходит
+            await httpContext.SignInAsync(authResult.Principal, authResult.Properties);
+
+            return tokenResponse.AccessToken;
         }
     }
 }

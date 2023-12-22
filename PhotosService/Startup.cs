@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -56,6 +57,7 @@ namespace PhotosService
                 {
                     options.Authority = "https://localhost:7001";
                     options.Audience = "photos_service";
+                    options.TokenValidationParameters.ClockSkew = TimeSpan.Zero;
                     options.Events = new JwtBearerEvents
                     {
                         OnTokenValidated = context =>
