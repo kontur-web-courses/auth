@@ -33,7 +33,7 @@ namespace PhotosApp
             services.Configure<PhotosServiceOptions>(configuration.GetSection("PhotosService"));
 
             var mvc = services.AddControllersWithViews();
-            
+
             if (env.IsDevelopment())
                 mvc.AddRazorRuntimeCompilation();
 
@@ -63,7 +63,7 @@ namespace PhotosApp
             }, new System.Reflection.Assembly[0]);
 
             services.AddTransient<ICookieManager, ChunkingCookieManager>();
-            
+
             services.AddAuthentication(options =>
                 {
                     // NOTE: Схема, которую внешние провайдеры будут использовать для сохранения данных о пользователе
@@ -82,67 +82,69 @@ namespace PhotosApp
                     // будет игнорироваться редирект по настройке AuthenticationProperties.RedirectUri
                     options.LogoutPath = "/Passport/Logout";
                 })
-                    .AddOpenIdConnect("Passport", "Паспорт", options =>
-                    {
-                        options.Authority = "https://localhost:7001";
-
-                        options.ClientId = "Photos App by OIDC";
-                        options.ClientSecret = "secret";
-                        options.ResponseType = "code";
-
-                        // NOTE: oidc и profile уже добавлены по умолчанию
-                        options.Scope.Add("email");
-
-                        options.CallbackPath = "/signin-passport";
-
-                        // NOTE: все эти проверки токена выполняются по умолчанию, указаны для ознакомления
-                        options.TokenValidationParameters.ValidateIssuer = true; // проверка издателя
-                        options.TokenValidationParameters.ValidateAudience = true; // проверка получателя
-                        options.TokenValidationParameters.ValidateLifetime = true; // проверка не протух ли
-                        options.TokenValidationParameters.RequireSignedTokens =
-                            true; // есть ли валидная подпись издателя
-                    });
-                services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
-                
-                services.AddAuthorization(options =>
+                .AddOpenIdConnect("Passport", "Паспорт", options =>
                 {
-                    options.DefaultPolicy = new AuthorizationPolicyBuilder()
-                        .RequireAuthenticatedUser()
-                        .Build();
+                    options.Authority = "https://localhost:7001";
 
-                    options.AddPolicy(
-                        "Beta",
-                        policyBuilder =>
-                        {
-                            policyBuilder.RequireAuthenticatedUser();
-                            policyBuilder.RequireClaim("testing", "beta");
-                        });
+                    options.ClientId = "Photos App by OIDC";
+                    options.ClientSecret = "secret";
+                    options.ResponseType = "code";
 
-                    options.AddPolicy(
-                        "CanAddPhoto",
-                        policyBuilder =>
-                        {
-                            policyBuilder.RequireAuthenticatedUser();
-                            policyBuilder.RequireClaim("subscription", "paid");
-                        });
-                    options.AddPolicy(
-                        "MustOwnPhoto",
-                        policyBuilder =>
-                        {
-                            policyBuilder.RequireAuthenticatedUser();
-                            policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
-                        });
+                    // NOTE: oidc и profile уже добавлены по умолчанию
+                    options.Scope.Add("email");
 
-                    options.AddPolicy(
-                        "OpenDecodePage",
-                        policyBuilder =>
-                        {
-                            policyBuilder.RequireAuthenticatedUser();
-                            // policyBuilder.AuthenticationSchemes = new List<string>
-                            //     {JwtBearerDefaults.AuthenticationScheme, IdentityConstants.ApplicationScheme};
-                            // policyBuilder.RequireRole("Dev");
-                        });
-                }); 
+                    options.CallbackPath = "/signin-passport";
+                    options.SignedOutCallbackPath = "/signout-callback-passport";
+
+                    // NOTE: все эти проверки токена выполняются по умолчанию, указаны для ознакомления
+                    options.TokenValidationParameters.ValidateIssuer = true; // проверка издателя
+                    options.TokenValidationParameters.ValidateAudience = true; // проверка получателя
+                    options.TokenValidationParameters.ValidateLifetime = true; // проверка не протух ли
+                    options.TokenValidationParameters.RequireSignedTokens =
+                        true; // есть ли валидная подпись издателя
+                    options.SaveTokens = true;
+                });
+            services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
+
+            services.AddAuthorization(options =>
+            {
+                options.DefaultPolicy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+
+                options.AddPolicy(
+                    "Beta",
+                    policyBuilder =>
+                    {
+                        policyBuilder.RequireAuthenticatedUser();
+                        policyBuilder.RequireClaim("testing", "beta");
+                    });
+
+                options.AddPolicy(
+                    "CanAddPhoto",
+                    policyBuilder =>
+                    {
+                        policyBuilder.RequireAuthenticatedUser();
+                        policyBuilder.RequireClaim("subscription", "paid");
+                    });
+                options.AddPolicy(
+                    "MustOwnPhoto",
+                    policyBuilder =>
+                    {
+                        policyBuilder.RequireAuthenticatedUser();
+                        policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
+                    });
+
+                options.AddPolicy(
+                    "OpenDecodePage",
+                    policyBuilder =>
+                    {
+                        policyBuilder.RequireAuthenticatedUser();
+                        // policyBuilder.AuthenticationSchemes = new List<string>
+                        //     {JwtBearerDefaults.AuthenticationScheme, IdentityConstants.ApplicationScheme};
+                        // policyBuilder.RequireRole("Dev");
+                    });
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
