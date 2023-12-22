@@ -5,6 +5,7 @@
     <UserSecretsId>af89c704-6e9c-456e-ad26-34aa3e177319</UserSecretsId>
     <GenerateProgramFile>false</GenerateProgramFile>
     <StartupObject>PhotosApp.Program</StartupObject>
+    <LangVersion>default</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Content Include=".photos\101.jpg">
@@ -66,14 +67,14 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.4"/>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="5.0.4"/>
     <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="5.0.4"/>
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="5.0.4"/>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="6.0.25" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="5.0.4"/>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="5.0.4"/>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="5.0.4">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.25">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.4"/>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.25" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.9.0"/>
     <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="3.9.0">
       <PrivateAssets>all</PrivateAssets>
@@ -90,6 +91,5 @@
     <PackageReference Include="Serilog.AspNetCore" Version="4.1.0"/>
     <PackageReference Include="System.Drawing.Common" Version="5.0.2"/>
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.9.0"/>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="5.0.5"/>
   </ItemGroup>
 </Project>

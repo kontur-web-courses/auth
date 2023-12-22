@@ -30,6 +30,10 @@ namespace PhotosApp.Clients
 
         public async Task<IEnumerable<PhotoEntity>> GetPhotosAsync(string ownerId)
         {
+            if (ownerId is null)
+            {
+                return Array.Empty<PhotoEntity>();
+            }
             var request = new HttpRequestMessage();
             request.Method = HttpMethod.Get;
             request.RequestUri = BuildUri($"/api/photos", $"ownerId={UrlEncode(ownerId)}");

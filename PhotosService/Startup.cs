@@ -25,6 +25,7 @@ namespace PhotosService
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddRazorPages();
             services.AddControllers(options =>
             {
                 options.ReturnHttpNotAcceptable = true;
@@ -52,7 +53,6 @@ namespace PhotosService
             {
                 app.UseDeveloperExceptionPage();
             }
-
             app.UseHttpsRedirection();
 
             app.UseSerilogRequestLogging();

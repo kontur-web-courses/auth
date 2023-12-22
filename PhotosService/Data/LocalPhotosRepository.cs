@@ -20,7 +20,8 @@ namespace PhotosService.Data
         {
             return await dbContext.Photos
                 .Where(i => i.OwnerId == ownerId)
-                .OrderBy(i => i.Title).ToListAsync();
+                .OrderBy(i => i.Title)
+                .ToListAsync();
         }
 
         public async Task<PhotoEntity> GetPhotoMetaAsync(Guid id)
