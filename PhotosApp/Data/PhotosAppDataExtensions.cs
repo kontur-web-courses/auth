@@ -29,7 +29,7 @@ namespace PhotosApp.Data
                         var photosDbContext = scope.ServiceProvider.GetRequiredService<PhotosDbContext>();
                         photosDbContext.SeedWithSamplePhotosAsync().Wait();
                         
-                        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                        /*var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
                         roleManager.SeedWithSampleRolesAsync().Wait();
                         
                         var appUser = scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>();
@@ -37,7 +37,7 @@ namespace PhotosApp.Data
                         
                         scope.ServiceProvider.GetRequiredService<TicketsDbContext>().Database.Migrate();
                         var ticketsDbContext = scope.ServiceProvider.GetRequiredService<TicketsDbContext>();
-                        ticketsDbContext.SeedWithSampleTicketsAsync().Wait();
+                        ticketsDbContext.SeedWithSampleTicketsAsync().Wait();*/
                     }
                 }
                 catch (Exception e)
@@ -146,6 +146,7 @@ namespace PhotosApp.Data
             await dbContext.SaveChangesAsync();
         }
 
+        /*
         private static async Task SeedWithSampleTicketsAsync(this TicketsDbContext dbContext)
         {
             dbContext.Tickets.RemoveRange(dbContext.Tickets);
@@ -192,8 +193,9 @@ namespace PhotosApp.Data
                 await userManager.AddClaimAsync(user, new Claim("role", "dev"));
             }
         }
+        */
 
-        private static async Task RegisterUserIfNotExists<TUser>(this UserManager<TUser> userManager,
+        /*private static async Task RegisterUserIfNotExists<TUser>(this UserManager<TUser> userManager,
             TUser user, string password)
             where TUser : IdentityUser<string>
         {
@@ -218,6 +220,6 @@ namespace PhotosApp.Data
                 var role = new IdentityRole { Name = "Dev" };
                 await roleManager.CreateAsync(role);
             }
-        }
+        }*/
     }
 }
