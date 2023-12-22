@@ -55,8 +55,17 @@ namespace PhotosService
             services.AddAuthentication("Bearer")
                 .AddJwtBearer("Bearer", options =>
                 {
-                    options.Authority = "https://localhost:7001";
-                    options.Audience = "photos_service";
+                    const string authority = "https://localhost:7001";
+                    const string apiResourceId = "photos_service";
+                    const string apiResourceSecret = "photos_service_secret";
+
+                    options.Authority = authority;
+                    options.Audience = apiResourceId;
+
+                    options.SecurityTokenValidators.Clear();
+                    options.SecurityTokenValidators.Add(new IntrospectionSecurityTokenValidator(
+                        authority, apiResourceId, apiResourceSecret));
+
                     options.TokenValidationParameters.ClockSkew = TimeSpan.Zero;
                     options.Events = new JwtBearerEvents
                     {
