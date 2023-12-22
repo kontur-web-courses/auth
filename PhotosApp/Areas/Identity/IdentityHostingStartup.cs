@@ -45,19 +45,26 @@ namespace PhotosApp.Areas.Identity
 
                 services.AddTransient<EntityTicketStore>();
                 services.ConfigureApplicationCookie(options =>
-                {
-                    var serviceProvider = services.BuildServiceProvider();
-                    options.SessionStore = serviceProvider.GetRequiredService<EntityTicketStore>();
-                    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
-                    options.Cookie.Name = "PhotosApp.Auth";
-                    options.Cookie.HttpOnly = true;
-                    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
-                    options.LoginPath = "/Identity/Account/Login";
-                    // ReturnUrlParameter requires 
-                    //using Microsoft.AspNetCore.Authentication.Cookies;
-                    options.ReturnUrlParameter = CookieAuthenticationDefaults.ReturnUrlParameter;
-                    options.SlidingExpiration = true;
-                });
+                    {
+                        var serviceProvider = services.BuildServiceProvider();
+                        //options.SessionStore = serviceProvider.GetRequiredService<EntityTicketStore>();
+                        options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+                        options.Cookie.Name = "PhotosApp.Auth";
+                        options.Cookie.HttpOnly = true;
+                        options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+                        options.LoginPath = "/Identity/Account/Login";
+                        // ReturnUrlParameter requires 
+                        //using Microsoft.AspNetCore.Authentication.Cookies;
+                        options.ReturnUrlParameter = CookieAuthenticationDefaults.ReturnUrlParameter;
+                        options.SlidingExpiration = true;
+                    })
+                    .ConfigureExternalCookie(options =>
+                    {
+                        options.Cookie.Name = "PhotosApp.Auth.External";
+                        options.Cookie.HttpOnly = true;
+                        options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+                        options.SlidingExpiration = true;
+                    });
 
                 services.AddScoped<IAuthorizationHandler, MustOwnPhotoHandler>();
                 services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAppUser>>();
@@ -87,6 +94,8 @@ namespace PhotosApp.Areas.Identity
                             options.RemoteSignOutPath = "/signout-google";
 
                             options.Scope.Add("email");
+
+                            //options.SaveTokens = true;
                         })
                     .AddJwtBearer(options =>
                     {
@@ -140,14 +149,15 @@ namespace PhotosApp.Areas.Identity
                             policyBuilder.RequireAuthenticatedUser();
                             policyBuilder.AddRequirements(new MustOwnPhotoRequirement());
                         });
-                    
+
                     options.AddPolicy(
                         "OpenDecodePage",
                         policyBuilder =>
                         {
                             policyBuilder.RequireAuthenticatedUser();
-                            policyBuilder.AuthenticationSchemes = new List<string> { JwtBearerDefaults.AuthenticationScheme, IdentityConstants.ApplicationScheme};
-                            policyBuilder.RequireRole("Dev");
+                            // policyBuilder.AuthenticationSchemes = new List<string>
+                            //     {JwtBearerDefaults.AuthenticationScheme, IdentityConstants.ApplicationScheme};
+                            // policyBuilder.RequireRole("Dev");
                         });
                 });
 
