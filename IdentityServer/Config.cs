@@ -59,7 +59,7 @@ namespace IdentityServer
                     AllowedGrantTypes = GrantTypes.Code,
         
                     // NOTE: показывать ли пользователю страницу consent со списком запрошенных разрешений
-                    RequireConsent = false,
+                    RequireConsent = true,
 
                     // NOTE: куда отправлять после логина
                     RedirectUris = { "https://localhost:5001/signin-passport" },

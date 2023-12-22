@@ -14,6 +14,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using IdentityModel.Client;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
 
 namespace PhotosApp.Clients
@@ -21,12 +24,14 @@ namespace PhotosApp.Clients
     public class RemotePhotosRepository : IPhotosRepository
     {
         private readonly string serviceUrl;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IMapper mapper;
         private readonly string authServerUrl;
 
-        public RemotePhotosRepository(IOptions<PhotosServiceOptions> options, IMapper mapper)
+        public RemotePhotosRepository(IOptions<PhotosServiceOptions> options,IHttpContextAccessor httpContextAccessor , IMapper mapper)
         {
             serviceUrl = options.Value.ServiceUrl;
+            _httpContextAccessor = httpContextAccessor;
             this.mapper = mapper;
             authServerUrl = "https://localhost:7001";
         }
@@ -226,7 +231,12 @@ namespace PhotosApp.Clients
 
         private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
         {
-            var accessToken = await GetAccessTokenByClientCredentialsAsync();
+            var httpContext = _httpContextAccessor.HttpContext;
+            
+            var accessToken = await httpContext.GetTokenAsync(OpenIdConnectParameterNames.AccessToken);
+            if (accessToken == null)
+                return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+
             var httpClient = new HttpClient();
             httpClient.SetBearerToken(accessToken);
             var response = await httpClient.SendAsync(request);
