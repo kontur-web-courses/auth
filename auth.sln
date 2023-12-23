@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A8F74D50-7A87-47E3-8114-029EBA39528E}"
 	ProjectSection(SolutionItems) = preProject
 		Auth.md = Auth.md
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdentityServer", "IdentityServer\IdentityServer.csproj", "{D34A6851-70DC-49A0-BD4B-12C3A607D070}"

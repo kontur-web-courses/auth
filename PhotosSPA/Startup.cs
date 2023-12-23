@@ -26,6 +26,8 @@ namespace PhotosSPA
             {
                 configuration.RootPath = "ClientApp/build";
             });
+            
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -43,7 +45,7 @@ namespace PhotosSPA
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
-
+            
             app.UseSpa(spa =>
             {
                 spa.Options.SourcePath = "ClientApp";

@@ -1,4 +1,7 @@
+using System;
+using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +11,7 @@ using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Serialization;
 using PhotosService.Data;
 using PhotosService.Models;
+using PhotosService.Services;
 using Serilog;
 
 namespace PhotosService
@@ -25,9 +29,12 @@ namespace PhotosService
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddRazorPages();
             services.AddControllers(options =>
             {
                 options.ReturnHttpNotAcceptable = true;
+                // NOTE: Существенно, что новый провайдер добавляется в начало списка перед провайдером по умолчанию
+                options.ModelBinderProviders.Insert(0, new JwtSecurityTokenModelBinderProvider());
             })
             .AddNewtonsoftJson(options =>
             {
@@ -44,6 +51,42 @@ namespace PhotosService
             {
                 cfg.CreateMap<PhotoEntity, PhotoDto>().ReverseMap();
             }, new System.Reflection.Assembly[0]);
+            
+            services.AddAuthentication("Bearer")
+                .AddJwtBearer("Bearer", options =>
+                {
+                    const string authority = "https://localhost:7001";
+                    const string apiResourceId = "photos_service";
+                    const string apiResourceSecret = "photos_service_secret";
+
+                    options.Authority = authority;
+                    options.Audience = apiResourceId;
+
+                    options.SecurityTokenValidators.Clear();
+                    options.SecurityTokenValidators.Add(new IntrospectionSecurityTokenValidator(
+                        authority, apiResourceId, apiResourceSecret));
+
+                    options.TokenValidationParameters.ClockSkew = TimeSpan.Zero;
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnTokenValidated = context =>
+                        {
+                            JwtSecurityTokenModelBinder.SaveToken(context.HttpContext, context.SecurityToken);
+                            return Task.CompletedTask;
+                        }
+                    };
+                });
+            
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(
+                    builder =>
+                    {
+                        builder.WithOrigins("https://localhost:8001")
+                            .AllowAnyHeader()
+                            .AllowAnyMethod();
+                    });
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -52,15 +95,22 @@ namespace PhotosService
             {
                 app.UseDeveloperExceptionPage();
             }
-
             app.UseHttpsRedirection();
 
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
+            app.UseCors();
+            app.UseAuthentication();
+            app.UseAuthorization();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+            });
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllerRoute("default", "{controller=Photos}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
             });
         }
     }

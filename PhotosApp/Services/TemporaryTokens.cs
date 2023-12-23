@@ -17,13 +17,17 @@ namespace PhotosApp.Services
         {
             var claims = new Claim[]
             {
+                new(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
+                new(ClaimTypes.Name, "dasdas"),
+                new(ClaimTypes.Role, "Dev")
             };
-
+            var activeTime = TimeSpan.FromSeconds(30);
+            var utcCurrentTime = DateTime.UtcNow;
             var jwt = new JwtSecurityToken(
                 claims: claims,
-                notBefore: null,
-                expires: null,
-                signingCredentials: null);
+                notBefore: utcCurrentTime,
+                expires: utcCurrentTime+activeTime,
+                signingCredentials: new SigningCredentials(SigningKey, SecurityAlgorithms.HmacSha256));
             var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
 
             return encodedJwt;
