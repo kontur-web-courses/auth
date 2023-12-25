@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -28,7 +29,18 @@ namespace PhotosApp.Services.Authorization
             // NOTE: RouteData содержит информацию о пути и параметрах запроса.
             // Ее сформировал UseRouting и к моменту авторизации уже отработал.
             var routeData = httpContext?.GetRouteData();
+            var photos = await photosRepository.GetPhotosAsync(userId);
 
+            if (photos.ToArray().Length == 0)
+            {
+                context.Fail();
+            }
+            
+            else
+            {
+                context.Succeed(requirement);
+            }
+            
             // NOTE: Использовать, если нужное условие выполняется
             // context.Succeed(requirement);
 
@@ -37,8 +49,7 @@ namespace PhotosApp.Services.Authorization
 
             // NOTE: Этот метод получает информацию о фотографии, в том числе о владельце
             // await photosRepository.GetPhotoMetaAsync(...)
-
-            throw new NotImplementedException();
+            
         }
     }
 }

@@ -1,2 +1,6 @@
 PhotosApp.db
 .photos/*.new.*
+/Migrations/UsersDb/20231109075138_Users.cs
+/Migrations/UsersDb/20231109075138_Users.Designer.cs
+/Migrations/TicketsDb/20231116084219_Tickets.cs
+/Migrations/TicketsDb/20231116084219_Tickets.Designer.cs
