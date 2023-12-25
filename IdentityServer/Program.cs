@@ -8,6 +8,7 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 using System;
+using IdentityServer.Data;
 
 namespace IdentityServer
 {
@@ -22,7 +23,14 @@ namespace IdentityServer
                 .MinimumLevel.Override("System", LogEventLevel.Warning)
                 .MinimumLevel.Override("Microsoft.AspNetCore.Authentication", LogEventLevel.Information)
                 .Enrich.FromLogContext()
-                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}", theme: AnsiConsoleTheme.Literate)
+                // uncomment to write to Azure diagnostics stream
+                //.WriteTo.File(
+                //    @"D:\home\LogFiles\Application\identityserver.txt",
+                //    fileSizeLimitBytes: 1_000_000,
+                //    rollOnFileSizeLimit: true,
+                //    shared: true,
+                //    flushToDiskInterval: TimeSpan.FromSeconds(1))
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}", theme: AnsiConsoleTheme.Code)
                 .CreateLogger();
 
             try
@@ -31,6 +39,8 @@ namespace IdentityServer
                 var hostBuilder = CreateHostBuilder(args);
                 Log.Information("Building web host");
                 var host = hostBuilder.Build();
+                Log.Information("Preparing data");
+                host.PrepareData();
                 Log.Information("Running web host");
                 host.Run();
                 return 0;
@@ -46,18 +56,12 @@ namespace IdentityServer
             }
         }
 
-        private static IHostBuilder CreateHostBuilder(string[] args) =>
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
+                .UseSerilog()
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    // NOTE: Жесткий способ настройки, который сработает в 100% различных IDE.
-                    // Для продакшена следует использовать аргументы командной строки,
-                    // переменные окружения, файлы конфигурации
-                    webBuilder.UseUrls("https://localhost:7001;http://localhost:7000");
-                    webBuilder.UseEnvironment("Development");
-
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.UseSerilog();
                 });
     }
 }
