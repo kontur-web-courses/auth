@@ -2,14 +2,19 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Clients;
 using PhotosApp.Clients.Models;
 using PhotosApp.Data;
 using PhotosApp.Models;
+using PhotosApp.Services;
 using Serilog;
 
 namespace PhotosApp
@@ -31,22 +36,23 @@ namespace PhotosApp
             services.Configure<PhotosServiceOptions>(configuration.GetSection("PhotosService"));
 
             var mvc = services.AddControllersWithViews();
+            services.AddRazorPages();
             if (env.IsDevelopment())
                 mvc.AddRazorRuntimeCompilation();
 
             // NOTE: Подключение IHttpContextAccessor, чтобы можно было получать HttpContext там,
             // где это не получается сделать более явно.
             services.AddHttpContextAccessor();
-
+            
             var connectionString = configuration.GetConnectionString("PhotosDbContextConnection")
                 ?? "Data Source=PhotosApp.db";
             services.AddDbContext<PhotosDbContext>(o => o.UseSqlite(connectionString));
             // NOTE: Вместо Sqlite можно использовать LocalDB от Microsoft или другой SQL Server
             //services.AddDbContext<PhotosDbContext>(o =>
             //    o.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=PhotosApp;Trusted_Connection=True;"));
-
+            
             services.AddScoped<IPhotosRepository, LocalPhotosRepository>();
-
+            services.AddScoped<IPasswordHasher<PhotosAppUser>, SimplePasswordHasher<PhotosAppUser>>();
             services.AddAutoMapper(cfg =>
             {
                 cfg.CreateMap<PhotoEntity, PhotoDto>().ReverseMap();
@@ -77,9 +83,14 @@ namespace PhotosApp
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
+
+            app.UseAuthentication();
+            app.UseAuthorization();
+            
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute("default", "{controller=Photos}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
             });
         }
     }

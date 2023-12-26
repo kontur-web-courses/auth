@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PhotosApp.Areas.Identity.Data;
 using PhotosApp.Services.TicketStores;
 
 namespace PhotosApp.Data
@@ -26,6 +28,22 @@ namespace PhotosApp.Data
 
                         var photosDbContext = scope.ServiceProvider.GetRequiredService<PhotosDbContext>();
                         photosDbContext.SeedWithSamplePhotosAsync().Wait();
+
+                        scope.ServiceProvider.GetRequiredService<UsersDbContext>().Database.Migrate();
+
+                        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                        roleManager.SeedWithSampleRolesAsync().Wait();
+
+                        var userDbContext = scope.ServiceProvider.GetRequiredService<UserManager<PhotosAppUser>>();
+                        userDbContext.SeedWithSampleUsersAsync().Wait();
+                        userDbContext.AddToRoleAsync(
+                            userDbContext.Users.FirstOrDefault(u => u.Email == "dev@gmail.com"), "Dev");
+                        userDbContext.AddClaimAsync(
+                            userDbContext.Users.FirstOrDefault(u => u.Email == "vicky@gmail.com"),
+                            new Claim("testing", "beta"));
+                        var ticketDbContext = scope.ServiceProvider.GetRequiredService<TicketsDbContext>();
+                        scope.ServiceProvider.GetRequiredService<TicketsDbContext>().Database.Migrate();
+                        ticketDbContext.SeedWithSampleTicketsAsync().Wait();
                     }
                 }
                 catch (Exception e)
@@ -45,31 +63,31 @@ namespace PhotosApp.Data
             {
                 new PhotoEntity
                 {
-                     Id = new Guid("c92bff2b-d13b-4ffa-86ab-99b323ac47c9"),
-                     Title = "Собор, Кристина",
-                     FileName = "101.jpg",
-                     OwnerId = "dcaec9ce-91c9-4105-8d4d-eee3365acd82"
+                    Id = new Guid("c92bff2b-d13b-4ffa-86ab-99b323ac47c9"),
+                    Title = "Собор, Кристина",
+                    FileName = "101.jpg",
+                    OwnerId = "dcaec9ce-91c9-4105-8d4d-eee3365acd82"
                 },
                 new PhotoEntity
                 {
-                     Id = new Guid("4c6979c1-6d41-47ca-82bd-f54312e94efe"),
-                     Title = "Арка, Кристина",
-                     FileName = "102.jpg",
-                     OwnerId = "dcaec9ce-91c9-4105-8d4d-eee3365acd82"
+                    Id = new Guid("4c6979c1-6d41-47ca-82bd-f54312e94efe"),
+                    Title = "Арка, Кристина",
+                    FileName = "102.jpg",
+                    OwnerId = "dcaec9ce-91c9-4105-8d4d-eee3365acd82"
                 },
                 new PhotoEntity
                 {
-                     Id = new Guid("e1e87b85-4189-4ac6-b025-0af471b0984e"),
-                     Title = "Дом, Кристина",
-                     FileName = "103.jpg",
-                     OwnerId = "dcaec9ce-91c9-4105-8d4d-eee3365acd82"
+                    Id = new Guid("e1e87b85-4189-4ac6-b025-0af471b0984e"),
+                    Title = "Дом, Кристина",
+                    FileName = "103.jpg",
+                    OwnerId = "dcaec9ce-91c9-4105-8d4d-eee3365acd82"
                 },
                 new PhotoEntity
                 {
-                     Id = new Guid("dc8f2662-d47f-434c-b3e3-5894c182523e"),
-                     Title = "Парк, Кристина",
-                     FileName = "104.jpg",
-                     OwnerId = "dcaec9ce-91c9-4105-8d4d-eee3365acd82"
+                    Id = new Guid("dc8f2662-d47f-434c-b3e3-5894c182523e"),
+                    Title = "Парк, Кристина",
+                    FileName = "104.jpg",
+                    OwnerId = "dcaec9ce-91c9-4105-8d4d-eee3365acd82"
                 },
                 new PhotoEntity
                 {
@@ -88,31 +106,31 @@ namespace PhotosApp.Data
 
                 new PhotoEntity
                 {
-                     Id = new Guid("55921bb1-a38d-4bb2-9c5e-c8a591dcbef1"),
-                     Title = "Аттракционы, Вики",
-                     FileName = "201.jpg",
-                     OwnerId = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd"
+                    Id = new Guid("55921bb1-a38d-4bb2-9c5e-c8a591dcbef1"),
+                    Title = "Аттракционы, Вики",
+                    FileName = "201.jpg",
+                    OwnerId = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd"
                 },
                 new PhotoEntity
                 {
-                     Id = new Guid("da5ba0b9-fc6c-492d-aebd-d10d7ae0f955"),
-                     Title = "Площадь, Вики",
-                     FileName = "202.jpg",
-                     OwnerId = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd"
+                    Id = new Guid("da5ba0b9-fc6c-492d-aebd-d10d7ae0f955"),
+                    Title = "Площадь, Вики",
+                    FileName = "202.jpg",
+                    OwnerId = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd"
                 },
                 new PhotoEntity
                 {
-                     Id = new Guid("26cae583-26f7-47e1-b3fd-207da500728e"),
-                     Title = "Собор, Вики",
-                     FileName = "203.jpg",
-                     OwnerId = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd"
+                    Id = new Guid("26cae583-26f7-47e1-b3fd-207da500728e"),
+                    Title = "Собор, Вики",
+                    FileName = "203.jpg",
+                    OwnerId = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd"
                 },
                 new PhotoEntity
                 {
-                     Id = new Guid("785c4bd0-e7a2-4c31-98f6-342968112ef3"),
-                     Title = "Всадник, Вики",
-                     FileName = "204.jpg",
-                     OwnerId = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd"
+                    Id = new Guid("785c4bd0-e7a2-4c31-98f6-342968112ef3"),
+                    Title = "Всадник, Вики",
+                    FileName = "204.jpg",
+                    OwnerId = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd"
                 },
                 new PhotoEntity
                 {
@@ -140,41 +158,43 @@ namespace PhotosApp.Data
             await dbContext.SaveChangesAsync();
         }
 
-        private static async Task SeedWithSampleUsersAsync<TUser>(this UserManager<TUser> userManager)
-            where TUser : IdentityUser, new()
+        private static async Task SeedWithSampleUsersAsync(this UserManager<PhotosAppUser> userManager)
         {
             // NOTE: ToList важен, так как при удалении пользователя меняется список пользователей
             foreach (var user in userManager.Users.ToList())
                 await userManager.DeleteAsync(user);
 
             {
-                var user = new TUser
+                var user = new PhotosAppUser
                 {
                     Id = "a83b72ed-3f99-44b5-aa32-f9d03e7eb1fd",
                     UserName = "vicky@gmail.com",
                     Email = "vicky@gmail.com"
                 };
-                await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                await userManager.AddClaimAsync(user, new Claim("testing", "Pass!2"));
             }
 
             {
-                var user = new TUser
+                var user = new PhotosAppUser
                 {
                     Id = "dcaec9ce-91c9-4105-8d4d-eee3365acd82",
                     UserName = "cristina@gmail.com",
-                    Email = "cristina@gmail.com"
+                    Email = "cristina@gmail.com",
+                    Paid = true
                 };
+                // await userManager.AddClaimAsync(user, new Claim("subscription", "paid"));
                 await userManager.RegisterUserIfNotExists(user, "Pass!2");
             }
 
             {
-                var user = new TUser
+                var user = new PhotosAppUser
                 {
                     Id = "b9991f69-b4c1-477d-9432-2f7cf6099e02",
                     UserName = "dev@gmail.com",
                     Email = "dev@gmail.com"
                 };
                 await userManager.RegisterUserIfNotExists(user, "Pass!2");
+                await userManager.AddToRoleAsync(user, "Dev");
             }
         }
 
@@ -200,7 +220,7 @@ namespace PhotosApp.Data
                 await roleManager.DeleteAsync(role);
 
             {
-                var role = new IdentityRole { Name = "Dev" };
+                var role = new IdentityRole {Name = "Dev"};
                 await roleManager.CreateAsync(role);
             }
         }
